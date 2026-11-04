@@ -7,8 +7,8 @@ signal objective_completed(title: String, next_title: String)
 const OBJECTIVES: Array[Dictionary] = [
 	{
 		"id": "investigate_ship",
-		"title": "Investigate the ship",
-		"description": "Leave the Cryo Chamber and enter the Main Corridor.",
+		"title": "Reach Engineering",
+		"description": "Cross Main Corridor to Engineering. At the Power Console, Life Support needs 35 power to stabilize oxygen.",
 	},
 	{
 		"id": "inspect_power_console",
@@ -18,7 +18,7 @@ const OBJECTIVES: Array[Dictionary] = [
 	{
 		"id": "restore_life_support",
 		"title": "Restore Life Support",
-		"description": "Raise Life Support allocation to 35 units.",
+		"description": "Allocate at least 35 power to Life Support to stabilize oxygen.",
 	},
 	{
 		"id": "investigate_communications",

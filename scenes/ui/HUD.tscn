@@ -59,6 +59,15 @@ offset_right = 92.0
 offset_bottom = 59.0
 show_percentage = false
 
+[node name="LifeSupportHint" type="Label" parent="Root"]
+offset_left = 4.0
+offset_top = 61.0
+offset_right = 98.0
+offset_bottom = 69.0
+theme_override_colors/font_color = Color(0.96, 0.76, 0.44, 1)
+theme_override_font_sizes/font_size = 5
+text = "LIFE SUPPORT NEEDS 35 POWER"
+
 [node name="ShipMinimap" type="Control" parent="Root"]
 layout_mode = 0
 offset_left = 3.0
@@ -106,14 +115,14 @@ text = "SAVE GAME"
 offset_left = 99.0
 offset_top = 23.0
 offset_right = 317.0
-offset_bottom = 50.0
+offset_bottom = 55.0
 color = Color(0.14, 0.25, 0.29, 1)
 
 [node name="ObjectivePanel" type="ColorRect" parent="Root"]
 offset_left = 100.0
 offset_top = 24.0
 offset_right = 316.0
-offset_bottom = 49.0
+offset_bottom = 54.0
 color = Color(0.025, 0.043, 0.060, 0.96)
 
 [node name="ObjectiveTitle" type="Label" parent="Root"]
@@ -129,7 +138,7 @@ text = "OBJECTIVE  /  INVESTIGATE THE SHIP"
 offset_left = 104.0
 offset_top = 35.0
 offset_right = 312.0
-offset_bottom = 48.0
+offset_bottom = 53.0
 theme_override_colors/font_color = Color(0.84, 0.91, 0.92, 1)
 theme_override_font_sizes/font_size = 7
 autowrap_mode = 3
@@ -171,3 +180,66 @@ vertical_alignment = 1
 [node name="SecurityConsolePanel" parent="." instance=ExtResource("6_security")]
 
 [node name="CrewDataLogPanel" parent="." instance=ExtResource("7_crew_logs")]
+
+[node name="GameOverOverlay" type="Control" parent="."]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+z_index = 100
+mouse_filter = 0
+
+[node name="Dimmer" type="ColorRect" parent="GameOverOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.005, 0.012, 0.02, 0.9)
+mouse_filter = 0
+
+[node name="GameOverFrame" type="ColorRect" parent="GameOverOverlay"]
+offset_left = 53.0
+offset_top = 48.0
+offset_right = 267.0
+offset_bottom = 132.0
+color = Color(0.14, 0.25, 0.29, 1)
+
+[node name="GameOverPanel" type="ColorRect" parent="GameOverOverlay"]
+offset_left = 54.0
+offset_top = 49.0
+offset_right = 266.0
+offset_bottom = 131.0
+color = Color(0.015, 0.027, 0.039, 0.99)
+
+[node name="GameOverTitle" type="Label" parent="GameOverOverlay/GameOverPanel"]
+offset_left = 8.0
+offset_top = 9.0
+offset_right = 204.0
+offset_bottom = 27.0
+theme_override_colors/font_color = Color(0.96, 0.57, 0.32, 1)
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+text = "GAME OVER"
+
+[node name="GameOverMessage" type="Label" parent="GameOverOverlay/GameOverPanel"]
+offset_left = 8.0
+offset_top = 32.0
+offset_right = 204.0
+offset_bottom = 50.0
+theme_override_colors/font_color = Color(0.84, 0.91, 0.92, 1)
+theme_override_font_sizes/font_size = 7
+horizontal_alignment = 1
+text = "OXYGEN DEPLETED"
+
+[node name="RestartButton" type="Button" parent="GameOverOverlay/GameOverPanel"]
+offset_left = 70.0
+offset_top = 59.0
+offset_right = 142.0
+offset_bottom = 74.0
+theme_override_font_sizes/font_size = 8
+text = "RESTART"

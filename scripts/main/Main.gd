@@ -4,6 +4,8 @@ const POWER_CONSOLE_INTERACTION_DISTANCE: float = 32.0
 const COMMUNICATIONS_CONSOLE_INTERACTION_DISTANCE: float = 32.0
 const NAVIGATION_CONSOLE_INTERACTION_DISTANCE: float = 32.0
 const SECURITY_CONSOLE_INTERACTION_DISTANCE: float = 32.0
+const OPENING_OXYGEN_GRACE_SECONDS: float = 60.0
+const SKIP_SAVE_RESTORE_META: String = "last_signal_skip_save_restore_once"
 
 @onready var power_console: Interactable = $WorldVisuals/DepthSort/PowerConsole
 @onready var communications_console: Interactable = $WorldVisuals/DepthSort/CommunicationsConsole
@@ -25,6 +27,9 @@ var save_game_system: SaveGameSystem = SaveGameSystem.new()
 var nearby_interactable: Interactable
 var current_location: String = ""
 var _pending_console_objective_id: String = ""
+var _opening_instruction_dismissed: bool = false
+var _opening_oxygen_grace_remaining: float = OPENING_OXYGEN_GRACE_SECONDS
+var _is_game_over: bool = false
 
 
 func _ready() -> void:
@@ -37,7 +42,18 @@ func _ready() -> void:
 	objective_system.objective_changed.connect(_on_current_objective_changed)
 	power_management.allocation_changed.connect(_on_power_allocation_changed)
 	crew_data_log_system.log_discovered.connect(_on_crew_log_discovered)
-	_restore_saved_game()
+	life_support.oxygen_changed.connect(_on_oxygen_changed)
+	hud.restart_requested.connect(_restart_game)
+	var tree_root := get_tree().root
+	var skip_save_restore := tree_root.has_meta(SKIP_SAVE_RESTORE_META)
+	if skip_save_restore:
+		tree_root.remove_meta(SKIP_SAVE_RESTORE_META)
+	else:
+		_restore_saved_game()
+	if player.global_position.x >= -80.0:
+		_opening_instruction_dismissed = true
+	if not _opening_instruction_dismissed and not _is_game_over:
+		hud.set_interaction_hint(_get_opening_instruction())
 	hud.set_player_position(player.global_position)
 	hud.power_console_closed.connect(_on_power_console_closed)
 	hud.crew_data_log_opened.connect(_on_crew_data_log_opened)
@@ -67,7 +83,14 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_sync_world_view(delta)
 	_update_power_console_proximity()
-	life_support.update(delta)
+	if not _is_game_over:
+		if _opening_oxygen_grace_remaining > 0.0:
+			_opening_oxygen_grace_remaining = maxf(
+				0.0,
+				_opening_oxygen_grace_remaining - delta
+			)
+		else:
+			life_support.update(delta)
 	hud.set_player_position(player.global_position)
 
 
@@ -101,6 +124,10 @@ func _sync_world_view(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _is_game_over:
+		get_viewport().set_input_as_handled()
+		return
+
 	if hud.is_any_console_open():
 		if event.is_action_pressed("ui_cancel"):
 			hud.close_open_console()
@@ -113,11 +140,15 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_interactable_entered(interactable: Interactable) -> void:
+	if _is_game_over:
+		return
 	nearby_interactable = interactable
 	hud.set_interaction_hint(interactable.interaction_hint)
 
 
 func _on_interactable_exited(interactable: Interactable) -> void:
+	if _is_game_over:
+		return
 	if nearby_interactable != interactable:
 		return
 	if interactable == power_console:
@@ -136,28 +167,49 @@ func _on_interactable_exited(interactable: Interactable) -> void:
 
 
 func _on_location_entered(location_name: String) -> void:
+	if _is_game_over:
+		return
 	current_location = location_name
 	if location_name == "Main Corridor":
+		_dismiss_opening_instruction()
+	elif location_name == "Engineering Room":
 		objective_system.complete_current_objective("investigate_ship")
 	if not is_instance_valid(nearby_interactable):
 		hud.set_interaction_hint(_get_location_guidance())
+
+
+func _get_opening_instruction() -> String:
+	return "MOVE: WASD / ARROWS  -  REACH ENGINEERING VIA MAIN CORRIDOR"
+
+
+func _dismiss_opening_instruction() -> void:
+	if _opening_instruction_dismissed:
+		return
+	_opening_instruction_dismissed = true
+	hud.clear_interaction_hint()
 
 
 func _get_location_guidance() -> String:
 	if current_location == "Engineering Room":
 		return "Use the cyan power console or north-wall security console"
 	if current_location == "Cryo Chamber":
+		if not _opening_instruction_dismissed:
+			return _get_opening_instruction()
 		return "Access the navigation console along the north wall"
 	return ""
 
 
 func _on_power_console_interaction_requested(message: String) -> void:
+	if _is_game_over:
+		return
 	_begin_console_objective("inspect_power_console")
 	hud.open_power_console(power_management, message)
 	player.set_physics_process(false)
 
 
 func _on_communications_console_interaction_requested(_message: String) -> void:
+	if _is_game_over:
+		return
 	_begin_console_objective(
 		"investigate_communications",
 		power_management.get_system_allocated_power(PowerManagement.COMMUNICATIONS) >= 20
@@ -167,6 +219,8 @@ func _on_communications_console_interaction_requested(_message: String) -> void:
 
 
 func _on_navigation_console_interaction_requested(_message: String) -> void:
+	if _is_game_over:
+		return
 	_begin_console_objective(
 		"investigate_navigation",
 		power_management.get_system_allocated_power(PowerManagement.NAVIGATION) >= 25
@@ -176,6 +230,8 @@ func _on_navigation_console_interaction_requested(_message: String) -> void:
 
 
 func _on_security_console_interaction_requested(_message: String) -> void:
+	if _is_game_over:
+		return
 	_begin_console_objective(
 		"access_security",
 		power_management.get_system_allocated_power(PowerManagement.SECURITY) >= 20
@@ -185,6 +241,8 @@ func _on_security_console_interaction_requested(_message: String) -> void:
 
 
 func _on_crew_data_log_interaction_requested(log_id: String) -> void:
+	if _is_game_over:
+		return
 	if not crew_data_log_system.has_log(log_id):
 		push_error("Main: Crew data log terminal references unknown log '%s'." % log_id)
 		return
@@ -214,6 +272,7 @@ func _restore_saved_game() -> void:
 	var saved_allocations: Dictionary = saved_state["power_allocations"]
 	var saved_oxygen: float = saved_state["oxygen"]
 	var saved_log_ids: Array = saved_state["discovered_log_ids"]
+	_opening_instruction_dismissed = saved_state["opening_tutorial_dismissed"]
 	player.global_position = saved_position
 	for system_name: String in PowerManagement.SYSTEM_NAMES:
 		if not power_management.set_system_allocation(system_name, 0):
@@ -235,12 +294,15 @@ func _restore_saved_game() -> void:
 
 
 func _on_save_game_requested() -> void:
+	if _is_game_over:
+		return
 	var save_succeeded := save_game_system.save_game(
 		player.global_position,
 		life_support,
 		power_management,
 		crew_data_log_system,
-		objective_system
+		objective_system,
+		_opening_instruction_dismissed
 	)
 	hud.show_save_result(save_succeeded)
 
@@ -249,9 +311,46 @@ func _on_power_allocation_changed(system_name: String, _previous: int, new_alloc
 	if (
 		system_name == PowerManagement.LIFE_SUPPORT
 		and new_allocation >= LifeSupport.MINIMUM_STABLE_ALLOCATION
+	):
+		_opening_oxygen_grace_remaining = 0.0
+	if (
+		system_name == PowerManagement.LIFE_SUPPORT
+		and new_allocation >= LifeSupport.MINIMUM_STABLE_ALLOCATION
 		and objective_system.get_current_objective_id() == "restore_life_support"
 	):
 		objective_system.complete_current_objective("restore_life_support")
+
+
+func _on_oxygen_changed(oxygen_level: float) -> void:
+	if oxygen_level <= 0.0:
+		_trigger_game_over()
+
+
+func _trigger_game_over() -> void:
+	if _is_game_over:
+		return
+	_is_game_over = true
+	_pending_console_objective_id = ""
+	hud.close_power_console()
+	hud.close_communications_console()
+	hud.close_navigation_console()
+	hud.close_security_console()
+	hud.close_crew_data_log()
+	player.set_physics_process(false)
+	nearby_interactable = null
+	hud.show_game_over()
+
+
+func _restart_game() -> void:
+	if not _is_game_over:
+		return
+
+	var tree_root := get_tree().root
+	tree_root.set_meta(SKIP_SAVE_RESTORE_META, true)
+	var reload_error := get_tree().reload_current_scene()
+	if reload_error != OK:
+		tree_root.remove_meta(SKIP_SAVE_RESTORE_META)
+		push_error("Main: Could not restart the game (error %d)." % reload_error)
 
 
 func _on_crew_log_discovered(_log_id: String) -> void:
@@ -274,6 +373,11 @@ func _check_current_objective_condition(objective_id: String) -> void:
 
 
 func _on_power_console_closed() -> void:
+	if _is_game_over:
+		_pending_console_objective_id = ""
+		player.set_physics_process(false)
+		return
+
 	var completed_objective_id := _pending_console_objective_id
 	_pending_console_objective_id = ""
 	match completed_objective_id:

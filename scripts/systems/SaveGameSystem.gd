@@ -10,7 +10,8 @@ func save_game(
 	life_support: LifeSupport,
 	power_management: PowerManagement,
 	crew_data_log_system: CrewDataLogSystem,
-	objective_system: ObjectiveSystem
+	objective_system: ObjectiveSystem,
+	opening_tutorial_dismissed: bool
 ) -> bool:
 	var config := ConfigFile.new()
 	config.set_value("save", "version", SAVE_VERSION)
@@ -18,6 +19,7 @@ func save_game(
 	config.set_value("save", "oxygen", life_support.get_oxygen_level())
 	config.set_value("save", "discovered_log_ids", crew_data_log_system.get_discovered_log_ids())
 	config.set_value("save", "objectives", objective_system.get_save_data())
+	config.set_value("save", "opening_tutorial_dismissed", opening_tutorial_dismissed)
 	for system_name: String in PowerManagement.SYSTEM_NAMES:
 		config.set_value(
 			"power",
@@ -102,12 +104,26 @@ func load_game(
 	else:
 		push_warning("SaveGameSystem: Save has no objective state; starting objectives anew.")
 
+	var tutorial_dismissed_variant: Variant = config.get_value(
+		"save",
+		"opening_tutorial_dismissed",
+		null
+	)
+	var tutorial_dismissed := player_position.x >= -80.0
+	if typeof(tutorial_dismissed_variant) == TYPE_BOOL:
+		tutorial_dismissed = tutorial_dismissed_variant
+	else:
+		var completed_objective_ids: Array = objective_state.get("completed_ids", [])
+		if completed_objective_ids.has("investigate_ship"):
+			tutorial_dismissed = true
+
 	return {
 		"player_position": player_position,
 		"oxygen": clampf(float(oxygen), 0.0, 100.0),
 		"power_allocations": power_allocations,
 		"discovered_log_ids": known_log_ids,
 		"objective_state": objective_state,
+		"opening_tutorial_dismissed": tutorial_dismissed,
 	}
 
 

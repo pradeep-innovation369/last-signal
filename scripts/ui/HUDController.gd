@@ -4,6 +4,7 @@ class_name HUDController
 signal power_console_closed
 signal crew_data_log_opened
 signal save_game_requested
+signal restart_requested
 
 @onready var interaction_hint: Label = $Root/InteractionHint
 @onready var message_frame: ColorRect = $Root/MessageFrame
@@ -21,6 +22,8 @@ signal save_game_requested
 @onready var oxygen_value: Label = $Root/OxygenValue
 @onready var oxygen_bar: ProgressBar = $Root/OxygenBar
 @onready var ship_minimap: ShipMinimap = $Root/ShipMinimap
+@onready var game_over_overlay: Control = $GameOverOverlay
+@onready var restart_button: Button = $GameOverOverlay/GameOverPanel/RestartButton
 
 var _life_support: LifeSupport
 var _power_management: PowerManagement
@@ -37,6 +40,7 @@ func _ready() -> void:
 	crew_data_log_panel.opened.connect(_on_crew_data_log_panel_opened)
 	log_archive_button.pressed.connect(_on_log_archive_button_pressed)
 	save_game_button.pressed.connect(_on_save_game_button_pressed)
+	restart_button.pressed.connect(_on_restart_button_pressed)
 	log_archive_button.add_theme_color_override("font_color", Color(0.84, 0.91, 0.92, 1.0))
 	log_archive_button.add_theme_font_size_override("font_size", 8)
 	log_archive_button.add_theme_stylebox_override(
@@ -60,6 +64,16 @@ func _ready() -> void:
 	save_game_button.add_theme_stylebox_override(
 		"pressed",
 		_make_button_style(Color(0.055, 0.10, 0.12, 1.0))
+	)
+	restart_button.add_theme_color_override("font_color", Color(0.84, 0.91, 0.92, 1.0))
+	restart_button.add_theme_font_size_override("font_size", 8)
+	restart_button.add_theme_stylebox_override(
+		"normal",
+		_make_button_style(Color(0.025, 0.043, 0.060, 0.95))
+	)
+	restart_button.add_theme_stylebox_override(
+		"hover",
+		_make_button_style(Color(0.075, 0.14, 0.16, 1.0))
 	)
 	oxygen_bar.max_value = 100.0
 	oxygen_bar.add_theme_stylebox_override("background", _make_oxygen_style(Color(0.07, 0.13, 0.16, 1.0)))
@@ -100,6 +114,18 @@ func set_player_position(world_position: Vector2) -> void:
 func set_interaction_hint(hint: String) -> void:
 	interaction_hint.text = hint
 	interaction_hint.visible = not hint.is_empty()
+
+
+func clear_interaction_hint() -> void:
+	interaction_hint.text = ""
+	interaction_hint.visible = false
+
+
+func show_game_over() -> void:
+	clear_interaction_hint()
+	save_game_button.disabled = true
+	log_archive_button.disabled = true
+	game_over_overlay.visible = true
 
 
 func show_message(message: String) -> void:
@@ -206,6 +232,10 @@ func _on_log_archive_button_pressed() -> void:
 
 func _on_save_game_button_pressed() -> void:
 	save_game_requested.emit()
+
+
+func _on_restart_button_pressed() -> void:
+	restart_requested.emit()
 
 
 func _on_objective_changed(_objective_id: String, title: String, description: String) -> void:
