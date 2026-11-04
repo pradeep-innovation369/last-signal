@@ -41,6 +41,12 @@ const LOG_ENTRIES: Dictionary = {
 	},
 }
 
+const REQUIRED_LOG_IDS: Array[String] = [
+	"cryo_observation",
+	"corridor_event",
+	"engineering_failure",
+]
+
 var _discovered_log_ids: Array[String] = []
 
 
@@ -84,7 +90,10 @@ func get_discovered_log_ids() -> Array[String]:
 
 
 func are_all_logs_discovered() -> bool:
-	return _discovered_log_ids.size() == LOG_ENTRIES.size()
+	for log_id: String in REQUIRED_LOG_IDS:
+		if not _discovered_log_ids.has(log_id):
+			return false
+	return true
 
 
 func restore_discovered_logs(log_ids: Array) -> void:

@@ -23,22 +23,22 @@ const OBJECTIVES: Array[Dictionary] = [
 	{
 		"id": "investigate_communications",
 		"title": "Investigate Communications",
-		"description": "Read the transmission, then close the console.",
+		"description": "Restore Communications power and read the incoming transmission.",
 	},
 	{
 		"id": "investigate_navigation",
 		"title": "Investigate Navigation",
-		"description": "Access the flight record, then close the Navigation Console.",
+		"description": "Restore Navigation power and access the flight record.",
 	},
 	{
 		"id": "access_security",
 		"title": "Access Security Console",
-		"description": "Access the incident record, then close the Security Console.",
+		"description": "Restore Security power and access the incident record.",
 	},
 	{
 		"id": "review_crew_logs",
 		"title": "Review Crew Data Logs",
-		"description": "Recover all three crew logs around the ship.",
+		"description": "Discover and read all three crew logs around the ship.",
 	},
 	{
 		"id": "reach_command_bridge",

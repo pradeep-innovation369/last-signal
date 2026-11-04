@@ -32,10 +32,10 @@ var objective_system: ObjectiveSystem = ObjectiveSystem.new()
 var save_game_system: SaveGameSystem = SaveGameSystem.new()
 var nearby_interactable: Interactable
 var current_location: String = ""
-var _pending_console_objective_id: String = ""
 var _opening_instruction_dismissed: bool = false
 var _is_game_over: bool = false
 var _is_restoring_saved_game: bool = false
+var _is_advancing_objectives: bool = false
 var _communications_transmission_discovered: bool = false
 var _navigation_flight_record_discovered: bool = false
 var _security_incident_record_discovered: bool = false
@@ -201,14 +201,12 @@ func _on_interactable_exited(interactable: Interactable) -> void:
 
 
 func _on_location_entered(location_name: String) -> void:
-	if _is_game_over:
+	if _is_game_over or _is_ending:
 		return
 	current_location = location_name
 	if location_name == "Main Corridor":
 		_dismiss_opening_instruction()
-		objective_system.complete_current_objective("investigate_ship")
-	elif location_name == "Engineering Room":
-		objective_system.complete_current_objective("reach_engineering")
+	_reconcile_objective_progress()
 	if not is_instance_valid(nearby_interactable):
 		hud.set_interaction_hint(_get_location_guidance())
 
@@ -233,10 +231,7 @@ func _get_location_guidance() -> String:
 
 
 func _sync_objectives_with_player_position() -> void:
-	if player.global_position.x >= -80.0:
-		objective_system.complete_current_objective("investigate_ship")
-	if player.global_position.x >= 160.0:
-		objective_system.complete_current_objective("reach_engineering")
+	_reconcile_objective_progress()
 
 
 func _on_power_console_interaction_requested(message: String) -> void:
@@ -249,10 +244,6 @@ func _on_power_console_interaction_requested(message: String) -> void:
 func _on_communications_console_interaction_requested(_message: String) -> void:
 	if _is_game_over or _is_ending:
 		return
-	_begin_console_objective(
-		"investigate_communications",
-		power_management.get_system_allocated_power(PowerManagement.COMMUNICATIONS) >= 20
-	)
 	hud.open_communications_console(
 		power_management,
 		_communications_transmission_discovered
@@ -263,11 +254,6 @@ func _on_communications_console_interaction_requested(_message: String) -> void:
 func _on_navigation_console_interaction_requested(_message: String) -> void:
 	if _is_game_over or _is_ending:
 		return
-	_begin_console_objective(
-		"investigate_navigation",
-		power_management.get_system_allocated_power(PowerManagement.NAVIGATION) >= 25
-		and _navigation_flight_record_discovered
-	)
 	hud.open_navigation_console(
 		power_management,
 		_navigation_flight_record_discovered
@@ -278,11 +264,6 @@ func _on_navigation_console_interaction_requested(_message: String) -> void:
 func _on_security_console_interaction_requested(_message: String) -> void:
 	if _is_game_over or _is_ending:
 		return
-	_begin_console_objective(
-		"access_security",
-		power_management.get_system_allocated_power(PowerManagement.SECURITY) >= 20
-		and _security_incident_record_discovered
-	)
 	hud.open_security_console(
 		power_management,
 		_security_incident_record_discovered
@@ -294,8 +275,11 @@ func _on_command_bridge_interaction_requested(_message: String) -> void:
 	if _is_game_over or _is_ending:
 		return
 	if (
-		objective_system.get_current_objective_id() != "reach_command_bridge"
-		and not objective_system.get_completed_objective_ids().has("reach_command_bridge")
+		not _has_completed_investigation_prerequisites()
+		or (
+			objective_system.get_current_objective_id() != "reach_command_bridge"
+			and not objective_system.get_completed_objective_ids().has("reach_command_bridge")
+		)
 	):
 		hud.show_message("COMMAND RECORD LOCKED\nComplete the ship investigations first.")
 		return
@@ -316,14 +300,7 @@ func _on_crew_data_log_interaction_requested(log_id: String) -> void:
 
 func _on_crew_data_log_opened() -> void:
 	player.set_physics_process(false)
-
-
-func _begin_console_objective(objective_id: String, condition_met: bool = true) -> void:
-	_pending_console_objective_id = (
-		objective_id
-		if condition_met and objective_system.get_current_objective_id() == objective_id
-		else ""
-	)
+	_reconcile_objective_progress()
 
 
 func _restore_saved_game() -> void:
@@ -381,7 +358,7 @@ func _restore_saved_game() -> void:
 			push_warning("Main: Saved ending did not satisfy investigation progress; ignoring it.")
 			_ending_id = ""
 	_is_restoring_saved_game = false
-	_check_current_objective_condition(objective_system.get_current_objective_id())
+	_reconcile_objective_progress()
 
 
 func _migrate_objective_state(state: Dictionary, saved_position: Vector2) -> Dictionary:
@@ -453,73 +430,37 @@ func _save_current_game() -> bool:
 	)
 
 
-func _on_power_allocation_changed(system_name: String, _previous: int, new_allocation: int) -> void:
+func _on_power_allocation_changed(
+	system_name: String, _previous: int, _new_allocation: int
+) -> void:
 	if _is_restoring_saved_game:
 		return
-	if (
-		system_name == PowerManagement.COMMUNICATIONS
-		and new_allocation >= 20
-		and hud.communications_console.visible
-		and objective_system.get_current_objective_id() == "investigate_communications"
-	):
-		_pending_console_objective_id = "investigate_communications"
-	if (
-		system_name == PowerManagement.NAVIGATION
-		and new_allocation >= 25
-		and hud.navigation_console.visible
-		and _navigation_flight_record_discovered
-		and objective_system.get_current_objective_id() == "investigate_navigation"
-	):
-		_pending_console_objective_id = "investigate_navigation"
-	if (
-		system_name == PowerManagement.SECURITY
-		and new_allocation >= 20
-		and hud.security_console.visible
-		and _security_incident_record_discovered
-		and objective_system.get_current_objective_id() == "access_security"
-	):
-		_pending_console_objective_id = "access_security"
-	if (
-		system_name == PowerManagement.LIFE_SUPPORT
-		and new_allocation >= LifeSupport.MINIMUM_STABLE_ALLOCATION
-		and objective_system.get_current_objective_id() == "restore_life_support"
-	):
-		objective_system.complete_current_objective("restore_life_support")
+	if system_name not in PowerManagement.SYSTEM_NAMES:
+		push_error("Main: Received allocation update for unknown system '%s'." % system_name)
+		return
+	_reconcile_objective_progress()
 
 
 func _on_communications_transmission_discovered() -> void:
 	_communications_transmission_discovered = true
-	if (
-		not _is_game_over
-		and objective_system.get_current_objective_id() == "investigate_communications"
-	):
-		_pending_console_objective_id = "investigate_communications"
+	_reconcile_objective_progress()
 
 
 func _on_navigation_flight_record_discovered() -> void:
 	_navigation_flight_record_discovered = true
-	if (
-		not _is_game_over
-		and objective_system.get_current_objective_id() == "investigate_navigation"
-	):
-		_pending_console_objective_id = "investigate_navigation"
+	_reconcile_objective_progress()
 
 
 func _on_security_incident_record_discovered() -> void:
 	_security_incident_record_discovered = true
-	if (
-		not _is_game_over
-		and objective_system.get_current_objective_id() == "access_security"
-	):
-		_pending_console_objective_id = "access_security"
+	_reconcile_objective_progress()
 
 
 func _on_command_bridge_evidence_discovered() -> void:
 	if _command_bridge_evidence_discovered:
 		return
 	_command_bridge_evidence_discovered = true
-	if objective_system.get_current_objective_id() == "reach_command_bridge":
-		objective_system.complete_current_objective("reach_command_bridge")
+	_reconcile_objective_progress()
 
 
 func _on_command_bridge_ending_confirmed(ending_id: String) -> void:
@@ -529,8 +470,6 @@ func _on_command_bridge_ending_confirmed(ending_id: String) -> void:
 		or not hud.command_bridge_panel.visible
 		or not _all_final_investigation_prerequisites_met()
 	):
-		return
-	if not objective_system.get_completed_objective_ids().has("reach_command_bridge"):
 		return
 	if ending_id != "response" and ending_id != "silence":
 		push_error("Main: Refusing unknown ending id '%s'." % ending_id)
@@ -556,7 +495,9 @@ func _all_final_investigation_prerequisites_met() -> bool:
 		if not completed_ids.has(required_id):
 			return false
 	return (
-		_communications_transmission_discovered
+		power_management.get_system_allocated_power(PowerManagement.LIFE_SUPPORT)
+		>= LifeSupport.MINIMUM_STABLE_ALLOCATION
+		and _communications_transmission_discovered
 		and _navigation_flight_record_discovered
 		and _security_incident_record_discovered
 		and _command_bridge_evidence_discovered
@@ -573,7 +514,6 @@ func _trigger_game_over() -> void:
 	if _is_game_over or _is_ending:
 		return
 	_is_game_over = true
-	_pending_console_objective_id = ""
 	hud.close_power_console()
 	hud.close_communications_console()
 	hud.close_navigation_console()
@@ -602,49 +542,79 @@ func _restart_game() -> void:
 func _on_crew_log_discovered(_log_id: String) -> void:
 	if _is_restoring_saved_game:
 		return
-	_check_current_objective_condition(objective_system.get_current_objective_id())
+	_reconcile_objective_progress()
 
 
 func _on_current_objective_changed(objective_id: String, _title: String, _description: String) -> void:
 	if _is_restoring_saved_game:
 		return
-	_check_current_objective_condition(objective_id)
+	if objective_id != "investigate_ship" and not _opening_instruction_dismissed:
+		_dismiss_opening_instruction()
+	_reconcile_objective_progress()
 
 
-func _check_current_objective_condition(objective_id: String) -> void:
-	if (
-		objective_id == "restore_life_support"
-		and power_management.get_system_allocated_power(PowerManagement.LIFE_SUPPORT)
+func _reconcile_objective_progress() -> void:
+	if _is_restoring_saved_game or _is_advancing_objectives or _is_game_over or _is_ending:
+		return
+
+	_is_advancing_objectives = true
+	while true:
+		var objective_id := objective_system.get_current_objective_id()
+		if objective_id.is_empty() or not _objective_condition_is_met(objective_id):
+			break
+		if not objective_system.complete_current_objective(objective_id):
+			break
+	_is_advancing_objectives = false
+
+
+func _objective_condition_is_met(objective_id: String) -> bool:
+	match objective_id:
+		"investigate_ship":
+			return player.global_position.x >= -80.0 or current_location == "Main Corridor"
+		"reach_engineering":
+			return player.global_position.x >= 160.0 or current_location == "Engineering Room"
+		"restore_life_support":
+			return (
+				power_management.get_system_allocated_power(PowerManagement.LIFE_SUPPORT)
+				>= LifeSupport.MINIMUM_STABLE_ALLOCATION
+			)
+		"investigate_communications":
+			return _communications_transmission_discovered
+		"investigate_navigation":
+			return _navigation_flight_record_discovered
+		"access_security":
+			return _security_incident_record_discovered
+		"review_crew_logs":
+			return crew_data_log_system.are_all_logs_discovered()
+		"reach_command_bridge":
+			return _command_bridge_evidence_discovered
+	return false
+
+
+func _has_completed_investigation_prerequisites() -> bool:
+	var completed_ids := objective_system.get_completed_objective_ids()
+	for required_id: String in [
+		"restore_life_support",
+		"investigate_communications",
+		"investigate_navigation",
+		"access_security",
+		"review_crew_logs",
+	]:
+		if not completed_ids.has(required_id):
+			return false
+	return (
+		power_management.get_system_allocated_power(PowerManagement.LIFE_SUPPORT)
 		>= LifeSupport.MINIMUM_STABLE_ALLOCATION
-	):
-		objective_system.complete_current_objective(objective_id)
-	elif objective_id == "review_crew_logs" and crew_data_log_system.are_all_logs_discovered():
-		objective_system.complete_current_objective(objective_id)
-	elif objective_id == "investigate_navigation" and _navigation_flight_record_discovered:
-		objective_system.complete_current_objective(objective_id)
-	elif objective_id == "access_security" and _security_incident_record_discovered:
-		objective_system.complete_current_objective(objective_id)
-	elif objective_id == "reach_command_bridge" and _command_bridge_evidence_discovered:
-		objective_system.complete_current_objective(objective_id)
+		and _communications_transmission_discovered
+		and _navigation_flight_record_discovered
+		and _security_incident_record_discovered
+		and crew_data_log_system.are_all_logs_discovered()
+	)
 
 
 func _on_power_console_closed() -> void:
-	if _is_game_over:
-		_pending_console_objective_id = ""
+	if _is_game_over or _is_ending:
 		player.set_physics_process(false)
 		return
-
-	var completed_objective_id := _pending_console_objective_id
-	_pending_console_objective_id = ""
-	match completed_objective_id:
-		"investigate_communications":
-			if power_management.get_system_allocated_power(PowerManagement.COMMUNICATIONS) >= 20:
-				objective_system.complete_current_objective(completed_objective_id)
-		"investigate_navigation":
-			if power_management.get_system_allocated_power(PowerManagement.NAVIGATION) >= 25:
-				objective_system.complete_current_objective(completed_objective_id)
-		"access_security":
-			if power_management.get_system_allocated_power(PowerManagement.SECURITY) >= 20:
-				objective_system.complete_current_objective(completed_objective_id)
 
 	player.set_physics_process(true)
