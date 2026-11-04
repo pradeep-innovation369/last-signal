@@ -109,7 +109,7 @@ func load_game(
 		"opening_tutorial_dismissed",
 		null
 	)
-	var tutorial_dismissed := player_position.x >= -80.0
+	var tutorial_dismissed: bool = player_position.x >= -80.0
 	if typeof(tutorial_dismissed_variant) == TYPE_BOOL:
 		tutorial_dismissed = tutorial_dismissed_variant
 	else:
