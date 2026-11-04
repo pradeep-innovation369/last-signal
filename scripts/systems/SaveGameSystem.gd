@@ -9,13 +9,15 @@ func save_game(
 	player_position: Vector2,
 	life_support: LifeSupport,
 	power_management: PowerManagement,
-	crew_data_log_system: CrewDataLogSystem
+	crew_data_log_system: CrewDataLogSystem,
+	objective_system: ObjectiveSystem
 ) -> bool:
 	var config := ConfigFile.new()
 	config.set_value("save", "version", SAVE_VERSION)
 	config.set_value("save", "player_position", player_position)
 	config.set_value("save", "oxygen", life_support.get_oxygen_level())
 	config.set_value("save", "discovered_log_ids", crew_data_log_system.get_discovered_log_ids())
+	config.set_value("save", "objectives", objective_system.get_save_data())
 	for system_name: String in PowerManagement.SYSTEM_NAMES:
 		config.set_value(
 			"power",
@@ -31,7 +33,10 @@ func save_game(
 	return true
 
 
-func load_game(crew_data_log_system: CrewDataLogSystem) -> Dictionary:
+func load_game(
+	crew_data_log_system: CrewDataLogSystem,
+	objective_system: ObjectiveSystem
+) -> Dictionary:
 	if not FileAccess.file_exists(SAVE_PATH):
 		return {}
 
@@ -87,9 +92,48 @@ func load_game(crew_data_log_system: CrewDataLogSystem) -> Dictionary:
 			if not known_log_ids.has(log_id):
 				known_log_ids.append(log_id)
 
+	var objective_state: Dictionary = {}
+	var objective_state_variant: Variant = config.get_value("save", "objectives", null)
+	if objective_state_variant != null:
+		if typeof(objective_state_variant) == TYPE_DICTIONARY:
+			objective_state = _validate_objective_state(objective_state_variant, objective_system)
+		else:
+			push_warning("SaveGameSystem: Objective state was malformed; starting objectives anew.")
+	else:
+		push_warning("SaveGameSystem: Save has no objective state; starting objectives anew.")
+
 	return {
 		"player_position": player_position,
 		"oxygen": clampf(float(oxygen), 0.0, 100.0),
 		"power_allocations": power_allocations,
 		"discovered_log_ids": known_log_ids,
+		"objective_state": objective_state,
+	}
+
+
+func _validate_objective_state(
+	state: Dictionary,
+	objective_system: ObjectiveSystem
+) -> Dictionary:
+	var completed_ids: Variant = state.get("completed_ids", [])
+	var current_id: Variant = state.get("current_id", "")
+	if typeof(completed_ids) != TYPE_ARRAY:
+		push_warning("SaveGameSystem: Completed objective list was malformed; starting objectives anew.")
+		return {}
+	if typeof(current_id) != TYPE_STRING:
+		push_warning("SaveGameSystem: Current objective id was malformed; deriving it from progress.")
+		current_id = ""
+	elif current_id != "" and not objective_system.is_known_objective_id(current_id):
+		push_warning("SaveGameSystem: Unknown current objective id; deriving it from progress.")
+		current_id = ""
+
+	var known_completed_ids: Array[String] = []
+	for objective_id: Variant in completed_ids:
+		if typeof(objective_id) == TYPE_STRING and objective_system.is_known_objective_id(objective_id):
+			if not known_completed_ids.has(objective_id):
+				known_completed_ids.append(objective_id)
+
+	return {
+		"current_id": current_id,
+		"completed_ids": known_completed_ids,
 	}

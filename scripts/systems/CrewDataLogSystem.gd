@@ -83,6 +83,10 @@ func get_discovered_log_ids() -> Array[String]:
 	return _discovered_log_ids.duplicate()
 
 
+func are_all_logs_discovered() -> bool:
+	return _discovered_log_ids.size() == LOG_ENTRIES.size()
+
+
 func restore_discovered_logs(log_ids: Array) -> void:
 	for log_id: Variant in log_ids:
 		if typeof(log_id) == TYPE_STRING and has_log(log_id):

@@ -20,9 +20,11 @@ const SECURITY_CONSOLE_INTERACTION_DISTANCE: float = 32.0
 var power_management: PowerManagement = PowerManagement.new()
 var life_support: LifeSupport
 var crew_data_log_system: CrewDataLogSystem = CrewDataLogSystem.new()
+var objective_system: ObjectiveSystem = ObjectiveSystem.new()
 var save_game_system: SaveGameSystem = SaveGameSystem.new()
 var nearby_interactable: Interactable
 var current_location: String = ""
+var _pending_console_objective_id: String = ""
 
 
 func _ready() -> void:
@@ -31,6 +33,10 @@ func _ready() -> void:
 	_sync_world_view(0.0)
 	hud.set_life_support(life_support, power_management)
 	hud.set_crew_data_log_system(crew_data_log_system)
+	hud.set_objective_system(objective_system)
+	objective_system.objective_changed.connect(_on_current_objective_changed)
+	power_management.allocation_changed.connect(_on_power_allocation_changed)
+	crew_data_log_system.log_discovered.connect(_on_crew_log_discovered)
 	_restore_saved_game()
 	hud.set_player_position(player.global_position)
 	hud.power_console_closed.connect(_on_power_console_closed)
@@ -131,6 +137,8 @@ func _on_interactable_exited(interactable: Interactable) -> void:
 
 func _on_location_entered(location_name: String) -> void:
 	current_location = location_name
+	if location_name == "Main Corridor":
+		objective_system.complete_current_objective("investigate_ship")
 	if not is_instance_valid(nearby_interactable):
 		hud.set_interaction_hint(_get_location_guidance())
 
@@ -144,21 +152,34 @@ func _get_location_guidance() -> String:
 
 
 func _on_power_console_interaction_requested(message: String) -> void:
+	_begin_console_objective("inspect_power_console")
 	hud.open_power_console(power_management, message)
 	player.set_physics_process(false)
 
 
 func _on_communications_console_interaction_requested(_message: String) -> void:
+	_begin_console_objective(
+		"investigate_communications",
+		power_management.get_system_allocated_power(PowerManagement.COMMUNICATIONS) >= 20
+	)
 	hud.open_communications_console(power_management)
 	player.set_physics_process(false)
 
 
 func _on_navigation_console_interaction_requested(_message: String) -> void:
+	_begin_console_objective(
+		"investigate_navigation",
+		power_management.get_system_allocated_power(PowerManagement.NAVIGATION) >= 25
+	)
 	hud.open_navigation_console(power_management)
 	player.set_physics_process(false)
 
 
 func _on_security_console_interaction_requested(_message: String) -> void:
+	_begin_console_objective(
+		"access_security",
+		power_management.get_system_allocated_power(PowerManagement.SECURITY) >= 20
+	)
 	hud.open_security_console(power_management)
 	player.set_physics_process(false)
 
@@ -176,8 +197,16 @@ func _on_crew_data_log_opened() -> void:
 	player.set_physics_process(false)
 
 
+func _begin_console_objective(objective_id: String, condition_met: bool = true) -> void:
+	_pending_console_objective_id = (
+		objective_id
+		if condition_met and objective_system.get_current_objective_id() == objective_id
+		else ""
+	)
+
+
 func _restore_saved_game() -> void:
-	var saved_state := save_game_system.load_game(crew_data_log_system)
+	var saved_state := save_game_system.load_game(crew_data_log_system, objective_system)
 	if saved_state.is_empty():
 		return
 
@@ -200,6 +229,9 @@ func _restore_saved_game() -> void:
 
 	life_support.restore_oxygen_level(saved_oxygen)
 	crew_data_log_system.restore_discovered_logs(saved_log_ids)
+	var objective_state: Dictionary = saved_state["objective_state"]
+	objective_system.restore_state(objective_state)
+	_check_current_objective_condition(objective_system.get_current_objective_id())
 
 
 func _on_save_game_requested() -> void:
@@ -207,10 +239,54 @@ func _on_save_game_requested() -> void:
 		player.global_position,
 		life_support,
 		power_management,
-		crew_data_log_system
+		crew_data_log_system,
+		objective_system
 	)
 	hud.show_save_result(save_succeeded)
 
 
+func _on_power_allocation_changed(system_name: String, _previous: int, new_allocation: int) -> void:
+	if (
+		system_name == PowerManagement.LIFE_SUPPORT
+		and new_allocation >= LifeSupport.MINIMUM_STABLE_ALLOCATION
+		and objective_system.get_current_objective_id() == "restore_life_support"
+	):
+		objective_system.complete_current_objective("restore_life_support")
+
+
+func _on_crew_log_discovered(_log_id: String) -> void:
+	_check_current_objective_condition(objective_system.get_current_objective_id())
+
+
+func _on_current_objective_changed(objective_id: String, _title: String, _description: String) -> void:
+	_check_current_objective_condition(objective_id)
+
+
+func _check_current_objective_condition(objective_id: String) -> void:
+	if (
+		objective_id == "restore_life_support"
+		and power_management.get_system_allocated_power(PowerManagement.LIFE_SUPPORT)
+		>= LifeSupport.MINIMUM_STABLE_ALLOCATION
+	):
+		objective_system.complete_current_objective(objective_id)
+	elif objective_id == "review_crew_logs" and crew_data_log_system.are_all_logs_discovered():
+		objective_system.complete_current_objective(objective_id)
+
+
 func _on_power_console_closed() -> void:
+	var completed_objective_id := _pending_console_objective_id
+	_pending_console_objective_id = ""
+	match completed_objective_id:
+		"inspect_power_console":
+			objective_system.complete_current_objective(completed_objective_id)
+		"investigate_communications":
+			if power_management.get_system_allocated_power(PowerManagement.COMMUNICATIONS) >= 20:
+				objective_system.complete_current_objective(completed_objective_id)
+		"investigate_navigation":
+			if power_management.get_system_allocated_power(PowerManagement.NAVIGATION) >= 25:
+				objective_system.complete_current_objective(completed_objective_id)
+		"access_security":
+			if power_management.get_system_allocated_power(PowerManagement.SECURITY) >= 20:
+				objective_system.complete_current_objective(completed_objective_id)
+
 	player.set_physics_process(true)

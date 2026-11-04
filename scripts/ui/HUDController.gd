@@ -16,6 +16,8 @@ signal save_game_requested
 @onready var crew_data_log_panel: CrewDataLogController = $CrewDataLogPanel
 @onready var log_archive_button: Button = $Root/LogArchiveButton
 @onready var save_game_button: Button = $Root/SaveGameButton
+@onready var objective_title: Label = $Root/ObjectiveTitle
+@onready var objective_description: Label = $Root/ObjectiveDescription
 @onready var oxygen_value: Label = $Root/OxygenValue
 @onready var oxygen_bar: ProgressBar = $Root/OxygenBar
 @onready var ship_minimap: ShipMinimap = $Root/ShipMinimap
@@ -23,6 +25,7 @@ signal save_game_requested
 var _life_support: LifeSupport
 var _power_management: PowerManagement
 var _crew_data_log_system: CrewDataLogSystem
+var _objective_system: ObjectiveSystem
 
 
 func _ready() -> void:
@@ -75,6 +78,19 @@ func set_life_support(life_support: LifeSupport, power_management: PowerManageme
 
 func set_crew_data_log_system(log_system: CrewDataLogSystem) -> void:
 	_crew_data_log_system = log_system
+
+
+func set_objective_system(objective_system: ObjectiveSystem) -> void:
+	_objective_system = objective_system
+	if not _objective_system.objective_changed.is_connected(_on_objective_changed):
+		_objective_system.objective_changed.connect(_on_objective_changed)
+	if not _objective_system.objective_completed.is_connected(_on_objective_completed):
+		_objective_system.objective_completed.connect(_on_objective_completed)
+	var objective := _objective_system.get_current_objective()
+	_update_objective_display(
+		str(objective.get("title", "MISSION OBJECTIVES COMPLETE")),
+		str(objective.get("description", "All current mission objectives are complete."))
+	)
 
 
 func set_player_position(world_position: Vector2) -> void:
@@ -190,6 +206,23 @@ func _on_log_archive_button_pressed() -> void:
 
 func _on_save_game_button_pressed() -> void:
 	save_game_requested.emit()
+
+
+func _on_objective_changed(_objective_id: String, title: String, description: String) -> void:
+	_update_objective_display(title, description)
+
+
+func _on_objective_completed(title: String, next_title: String) -> void:
+	show_message("OBJECTIVE COMPLETE: %s\nNEXT: %s" % [title, next_title])
+	var completion_message := message_label.text
+	await get_tree().create_timer(3.0).timeout
+	if message_label.text == completion_message:
+		clear_message()
+
+
+func _update_objective_display(title: String, description: String) -> void:
+	objective_title.text = "OBJECTIVE  /  %s" % title.to_upper()
+	objective_description.text = description
 
 
 func _on_crew_data_log_panel_opened() -> void:
