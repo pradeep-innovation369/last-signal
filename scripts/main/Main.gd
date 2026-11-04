@@ -20,6 +20,8 @@ func _ready() -> void:
 	life_support = LifeSupport.new(power_management)
 	world_texture.texture = render_viewport.get_texture()
 	_sync_world_view(0.0)
+	hud.set_life_support(life_support, power_management)
+	hud.set_player_position(player.global_position)
 	hud.power_console_closed.connect(_on_power_console_closed)
 	power_console.player_entered.connect(_on_interactable_entered)
 	power_console.player_exited.connect(_on_interactable_exited)
@@ -33,6 +35,7 @@ func _process(delta: float) -> void:
 	_sync_world_view(delta)
 	_update_power_console_proximity()
 	life_support.update(delta)
+	hud.set_player_position(player.global_position)
 
 
 func _update_power_console_proximity() -> void:
@@ -87,7 +90,6 @@ func _on_interactable_exited(interactable: Interactable) -> void:
 
 func _on_location_entered(location_name: String) -> void:
 	current_location = location_name
-	hud.set_location(location_name)
 	if not is_instance_valid(nearby_interactable):
 		hud.set_interaction_hint(_get_location_guidance())
 

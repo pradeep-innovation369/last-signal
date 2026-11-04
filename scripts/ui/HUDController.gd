@@ -3,20 +3,38 @@ class_name HUDController
 
 signal power_console_closed
 
-@onready var location_label: Label = $Root/LocationLabel
 @onready var interaction_hint: Label = $Root/InteractionHint
 @onready var message_frame: ColorRect = $Root/MessageFrame
 @onready var message_panel: ColorRect = $Root/MessagePanel
 @onready var message_label: Label = $Root/MessageLabel
 @onready var power_console: PowerConsoleController = $PowerConsolePanel
+@onready var oxygen_value: Label = $Root/OxygenValue
+@onready var oxygen_bar: ProgressBar = $Root/OxygenBar
+@onready var ship_minimap: ShipMinimap = $Root/ShipMinimap
+
+var _life_support: LifeSupport
+var _power_management: PowerManagement
 
 
 func _ready() -> void:
 	power_console.closed.connect(_on_power_console_closed)
+	oxygen_bar.max_value = 100.0
+	oxygen_bar.add_theme_stylebox_override("background", _make_oxygen_style(Color(0.07, 0.13, 0.16, 1.0)))
+	oxygen_bar.add_theme_stylebox_override("fill", _make_oxygen_style(Color(0.28, 0.79, 0.84, 1.0)))
 
 
-func set_location(location_name: String) -> void:
-	location_label.text = location_name
+func set_life_support(life_support: LifeSupport, power_management: PowerManagement) -> void:
+	_life_support = life_support
+	_power_management = power_management
+	if not _life_support.oxygen_changed.is_connected(_on_oxygen_changed):
+		_life_support.oxygen_changed.connect(_on_oxygen_changed)
+	if not _power_management.allocation_changed.is_connected(_on_power_allocation_changed):
+		_power_management.allocation_changed.connect(_on_power_allocation_changed)
+	_update_oxygen_display(_life_support.get_oxygen_level())
+
+
+func set_player_position(world_position: Vector2) -> void:
+	ship_minimap.set_player_position(world_position)
 
 
 func set_interaction_hint(hint: String) -> void:
@@ -49,5 +67,35 @@ func is_power_console_open() -> bool:
 	return power_console.visible
 
 
+func _on_oxygen_changed(oxygen_level: float) -> void:
+	_update_oxygen_display(oxygen_level)
+
+
+func _on_power_allocation_changed(system_name: String, _previous_allocation: int, _new_allocation: int) -> void:
+	if system_name == LifeSupport.LIFE_SUPPORT_SYSTEM_NAME and _life_support != null:
+		_update_oxygen_display(_life_support.get_oxygen_level())
+
+
+func _update_oxygen_display(oxygen_level: float) -> void:
+	var clamped_oxygen := clampf(oxygen_level, 0.0, 100.0)
+	oxygen_value.text = "%d%%" % roundi(clamped_oxygen)
+	oxygen_bar.value = clamped_oxygen
+
+	var is_depleting := (
+		_power_management.get_system_allocated_power(LifeSupport.LIFE_SUPPORT_SYSTEM_NAME)
+		< LifeSupport.MINIMUM_STABLE_ALLOCATION
+	)
+	var indicator_color := Color(0.96, 0.57, 0.32, 1.0) if is_depleting or clamped_oxygen <= 25.0 else Color(0.36, 0.85, 0.88, 1.0)
+	oxygen_value.add_theme_color_override("font_color", indicator_color)
+	oxygen_bar.add_theme_stylebox_override("fill", _make_oxygen_style(indicator_color))
+
+
 func _on_power_console_closed() -> void:
 	power_console_closed.emit()
+
+
+func _make_oxygen_style(color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = color
+	style.set_corner_radius_all(1)
+	return style
