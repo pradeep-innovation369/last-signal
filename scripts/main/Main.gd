@@ -2,9 +2,11 @@ extends Node2D
 
 const POWER_CONSOLE_INTERACTION_DISTANCE: float = 32.0
 const COMMUNICATIONS_CONSOLE_INTERACTION_DISTANCE: float = 32.0
+const NAVIGATION_CONSOLE_INTERACTION_DISTANCE: float = 32.0
 
 @onready var power_console: Interactable = $WorldVisuals/DepthSort/PowerConsole
 @onready var communications_console: Interactable = $WorldVisuals/DepthSort/CommunicationsConsole
+@onready var navigation_console: Interactable = $WorldVisuals/DepthSort/NavigationConsole
 @onready var hud: HUDController = $HUD
 @onready var player: PlayerController = $WorldVisuals/DepthSort/Player
 @onready var player_camera: Camera2D = $WorldVisuals/DepthSort/Player/Camera2D
@@ -31,6 +33,9 @@ func _ready() -> void:
 	communications_console.player_entered.connect(_on_interactable_entered)
 	communications_console.player_exited.connect(_on_interactable_exited)
 	communications_console.interaction_requested.connect(_on_communications_console_interaction_requested)
+	navigation_console.player_entered.connect(_on_interactable_entered)
+	navigation_console.player_exited.connect(_on_interactable_exited)
+	navigation_console.interaction_requested.connect(_on_navigation_console_interaction_requested)
 
 	for location: LocationArea in $Gameplay/Locations.get_children():
 		location.location_entered.connect(_on_location_entered)
@@ -46,6 +51,7 @@ func _process(delta: float) -> void:
 func _update_power_console_proximity() -> void:
 	_update_console_proximity(power_console, POWER_CONSOLE_INTERACTION_DISTANCE)
 	_update_console_proximity(communications_console, COMMUNICATIONS_CONSOLE_INTERACTION_DISTANCE)
+	_update_console_proximity(navigation_console, NAVIGATION_CONSOLE_INTERACTION_DISTANCE)
 
 
 func _update_console_proximity(console: Interactable, interaction_distance: float) -> void:
@@ -94,6 +100,7 @@ func _on_interactable_exited(interactable: Interactable) -> void:
 
 	hud.close_power_console()
 	hud.close_communications_console()
+	hud.close_navigation_console()
 	nearby_interactable = null
 	hud.set_interaction_hint(_get_location_guidance())
 	hud.clear_message()
@@ -108,6 +115,8 @@ func _on_location_entered(location_name: String) -> void:
 func _get_location_guidance() -> String:
 	if current_location == "Engineering Room":
 		return "Go right into Engineering; find the cyan-screen console"
+	if current_location == "Cryo Chamber":
+		return "Access the navigation console along the north wall"
 	return ""
 
 
@@ -118,6 +127,11 @@ func _on_power_console_interaction_requested(message: String) -> void:
 
 func _on_communications_console_interaction_requested(_message: String) -> void:
 	hud.open_communications_console(power_management)
+	player.set_physics_process(false)
+
+
+func _on_navigation_console_interaction_requested(_message: String) -> void:
+	hud.open_navigation_console(power_management)
 	player.set_physics_process(false)
 
 
