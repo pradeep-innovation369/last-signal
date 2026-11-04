@@ -8,6 +8,7 @@ signal power_console_closed
 @onready var message_panel: ColorRect = $Root/MessagePanel
 @onready var message_label: Label = $Root/MessageLabel
 @onready var power_console: PowerConsoleController = $PowerConsolePanel
+@onready var communications_console: CommunicationsConsoleController = $CommunicationsConsolePanel
 @onready var oxygen_value: Label = $Root/OxygenValue
 @onready var oxygen_bar: ProgressBar = $Root/OxygenBar
 @onready var ship_minimap: ShipMinimap = $Root/ShipMinimap
@@ -18,6 +19,7 @@ var _power_management: PowerManagement
 
 func _ready() -> void:
 	power_console.closed.connect(_on_power_console_closed)
+	communications_console.closed.connect(_on_power_console_closed)
 	oxygen_bar.max_value = 100.0
 	oxygen_bar.add_theme_stylebox_override("background", _make_oxygen_style(Color(0.07, 0.13, 0.16, 1.0)))
 	oxygen_bar.add_theme_stylebox_override("fill", _make_oxygen_style(Color(0.28, 0.79, 0.84, 1.0)))
@@ -63,8 +65,27 @@ func close_power_console() -> void:
 	power_console.close()
 
 
+func open_communications_console(power_management: PowerManagement) -> void:
+	communications_console.open(power_management)
+
+
+func close_communications_console() -> void:
+	communications_console.close()
+
+
 func is_power_console_open() -> bool:
 	return power_console.visible
+
+
+func is_any_console_open() -> bool:
+	return power_console.visible or communications_console.visible
+
+
+func close_open_console() -> void:
+	if power_console.visible:
+		power_console.close()
+	elif communications_console.visible:
+		communications_console.close()
 
 
 func _on_oxygen_changed(oxygen_level: float) -> void:

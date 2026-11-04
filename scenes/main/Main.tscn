@@ -1,10 +1,11 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/world/PowerConsole.tscn" id="2_console"]
 [ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="3_hud"]
 [ext_resource type="Script" path="res://scripts/main/Main.gd" id="4_main"]
 [ext_resource type="Script" path="res://scripts/world/LocationArea.gd" id="5_location"]
+[ext_resource type="PackedScene" path="res://scenes/world/CommunicationsConsole.tscn" id="6_communications"]
 [ext_resource type="PackedScene" path="res://scenes/world/ShipWorld3D.tscn" id="16_ship_world"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cryo_divider"]
@@ -142,6 +143,9 @@ shape = SubResource("RectangleShape2D_location_engineering")
 
 [node name="PowerConsole" parent="WorldVisuals/DepthSort" instance=ExtResource("2_console")]
 position = Vector2(320, 8)
+
+[node name="CommunicationsConsole" parent="WorldVisuals/DepthSort" instance=ExtResource("6_communications")]
+position = Vector2(80, -50)
 
 [node name="Player" parent="WorldVisuals/DepthSort" instance=ExtResource("1_player")]
 position = Vector2(-208, 0)

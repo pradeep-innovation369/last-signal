@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/HUDController.gd" id="1_hud"]
 [ext_resource type="PackedScene" path="res://scenes/ui/PowerConsolePanel.tscn" id="2_power_console"]
 [ext_resource type="Script" path="res://scripts/ui/ShipMinimap.gd" id="3_minimap"]
+[ext_resource type="PackedScene" path="res://scenes/ui/CommunicationsConsolePanel.tscn" id="4_communications"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -102,3 +103,5 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="PowerConsolePanel" parent="." instance=ExtResource("2_power_console")]
+
+[node name="CommunicationsConsolePanel" parent="." instance=ExtResource("4_communications")]

@@ -506,6 +506,7 @@ func _build_corridor() -> void:
 	_box("CorridorCableTray", Vector3(40, 31, -62), Vector3(196, 3, 8), "steel_dark")
 	_box("CorridorCableHighlight", Vector3(40, 33, -61), Vector3(188, 1, 2), "steel_light")
 	_terminal("CorridorWallTerminal", Vector3(32, 0, -58), 0.85)
+	_terminal("CommunicationsRelay", Vector3(80, 0, -58), 0.9)
 	_terminal("CorridorSignalPanel", Vector3(-56, 0, -58), 0.6)
 	_box("CorridorEmergencyStrip", Vector3(120, 27, -62), Vector3(12, 2, 1), "red")
 	_box("CorridorAmberStrip", Vector3(-48, 27, -62), Vector3(8, 2, 1), "amber")
