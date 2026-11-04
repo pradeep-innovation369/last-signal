@@ -1,6 +1,7 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/Interactable.gd" id="1_interactable"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/power_console.svg" id="2_art"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_console"]
 size = Vector2(40, 40)
@@ -14,6 +15,7 @@ collision_mask = 1
 script = ExtResource("1_interactable")
 interaction_hint = "E - Use Power Console"
 interaction_message = "Power system offline. Restore auxiliary power."
+y_sort_origin = 20
 
 [node name="InteractionRange" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_console")
@@ -25,41 +27,5 @@ collision_mask = 1
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ConsoleBody"]
 shape = SubResource("RectangleShape2D_console_body")
 
-[node name="ConsoleBezel" type="Polygon2D" parent="."]
-color = Color(0.25, 0.39, 0.42, 1)
-polygon = PackedVector2Array(-14, -12, 14, -12, 14, 12, -14, 12)
-
-[node name="Console" type="Polygon2D" parent="."]
-position = Vector2(0, 1)
-color = Color(0.12, 0.2, 0.22, 1)
-polygon = PackedVector2Array(-12, -10, 12, -10, 12, 10, -12, 10)
-
-[node name="ScreenBezel" type="Polygon2D" parent="."]
-position = Vector2(0, -4)
-color = Color(0.025, 0.07, 0.08, 1)
-polygon = PackedVector2Array(-9, -4, 9, -4, 9, 4, -9, 4)
-
-[node name="ConsoleScreen" type="Polygon2D" parent="."]
-position = Vector2(0, -4)
-color = Color(0.62, 0.31, 0.2, 1)
-polygon = PackedVector2Array(-7, -2, 7, -2, 7, 2, -7, 2)
-
-[node name="ConsoleStatusLight" type="Polygon2D" parent="."]
-position = Vector2(0, 6)
-color = Color(0.86, 0.38, 0.25, 1)
-polygon = PackedVector2Array(-2, -1, 2, -1, 2, 1, -2, 1)
-
-[node name="ConsoleIndicator" type="Polygon2D" parent="."]
-position = Vector2(-7, 6)
-color = Color(0.25, 0.62, 0.63, 1)
-polygon = PackedVector2Array(-1, -1, 1, -1, 1, 1, -1, 1)
-
-[node name="ConsoleBoltTopLeft" type="Polygon2D" parent="."]
-position = Vector2(-11, -9)
-color = Color(0.91, 0.68, 0.38, 1)
-polygon = PackedVector2Array(-1, -1, 1, -1, 1, 1, -1, 1)
-
-[node name="ConsoleBoltTopRight" type="Polygon2D" parent="."]
-position = Vector2(11, -9)
-color = Color(0.91, 0.68, 0.38, 1)
-polygon = PackedVector2Array(-1, -1, 1, -1, 1, 1, -1, 1)
+[node name="Artwork" type="Sprite2D" parent="."]
+texture = ExtResource("2_art")

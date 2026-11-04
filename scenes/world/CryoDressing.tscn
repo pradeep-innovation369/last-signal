@@ -1,65 +1,9 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Texture2D" path="res://assets/art/environment/ship_props.svg" id="1_props"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/cryo_chamber.svg" id="1_art"]
 
 [node name="CryoDressing" type="Node2D"]
 
-[node name="FloorPanelInset" type="Polygon2D" parent="."]
-color = Color(0.07, 0.115, 0.13, 1)
-polygon = PackedVector2Array(-232, -88, -168, -88, -168, -84, -232, -84)
-
-[node name="FloorPanelSeamOne" type="Polygon2D" parent="."]
-color = Color(0.025, 0.045, 0.055, 1)
-polygon = PackedVector2Array(-224, -76, -220, -76, -220, 76, -224, 76)
-
-[node name="FloorPanelSeamTwo" type="Polygon2D" parent="."]
-color = Color(0.025, 0.045, 0.055, 1)
-polygon = PackedVector2Array(-180, -76, -176, -76, -176, 76, -180, 76)
-
-[node name="WallPipeUpper" type="Polygon2D" parent="."]
-color = Color(0.18, 0.27, 0.29, 1)
-polygon = PackedVector2Array(-300, -104, -104, -104, -104, -100, -300, -100)
-
-[node name="WallPipeHighlight" type="Polygon2D" parent="."]
-color = Color(0.32, 0.45, 0.43, 1)
-polygon = PackedVector2Array(-300, -104, -104, -104, -104, -102, -300, -102)
-
-[node name="WallPipeDrop" type="Polygon2D" parent="."]
-color = Color(0.18, 0.27, 0.29, 1)
-polygon = PackedVector2Array(-300, -100, -296, -100, -296, -92, -300, -92)
-
-[node name="NorthVent" type="Sprite2D" parent="."]
-position = Vector2(-128, -84)
-texture = ExtResource("1_props")
-region_enabled = true
-region_rect = Rect2(0, 0, 16, 16)
-
-[node name="SouthVent" type="Sprite2D" parent="."]
-position = Vector2(-128, 84)
-texture = ExtResource("1_props")
-region_enabled = true
-region_rect = Rect2(0, 0, 16, 16)
-
-[node name="CryoStatusScreen" type="Sprite2D" parent="."]
-position = Vector2(-128, -48)
-texture = ExtResource("1_props")
-region_enabled = true
-region_rect = Rect2(80, 0, 16, 16)
-
-[node name="UpperWarningLamp" type="Sprite2D" parent="."]
-position = Vector2(-104, -88)
-texture = ExtResource("1_props")
-region_enabled = true
-region_rect = Rect2(48, 0, 16, 16)
-
-[node name="LowerEmergencyLamp" type="Sprite2D" parent="."]
-position = Vector2(-104, 88)
-texture = ExtResource("1_props")
-region_enabled = true
-region_rect = Rect2(64, 0, 16, 16)
-
-[node name="CryoPipeElbow" type="Sprite2D" parent="."]
-position = Vector2(-300, -100)
-texture = ExtResource("1_props")
-region_enabled = true
-region_rect = Rect2(32, 0, 16, 16)
+[node name="RoomArtwork" type="Sprite2D" parent="."]
+texture = ExtResource("1_art")
+position = Vector2(-200, 0)

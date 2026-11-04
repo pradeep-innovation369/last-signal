@@ -1,61 +1,9 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Texture2D" path="res://assets/art/environment/ship_props.svg" id="1_props"]
+[ext_resource type="Texture2D" path="res://assets/art/environment/main_corridor.svg" id="1_art"]
 
 [node name="CorridorDressing" type="Node2D"]
 
-[node name="UpperFloorPanel" type="Polygon2D" parent="."]
-color = Color(0.08, 0.12, 0.13, 1)
-polygon = PackedVector2Array(-56, -44, 136, -44, 136, -40, -56, -40)
-
-[node name="LowerFloorPanel" type="Polygon2D" parent="."]
-color = Color(0.08, 0.12, 0.13, 1)
-polygon = PackedVector2Array(-56, 40, 136, 40, 136, 44, -56, 44)
-
-[node name="FloorSeamOne" type="Polygon2D" parent="."]
-color = Color(0.025, 0.045, 0.055, 1)
-polygon = PackedVector2Array(-8, -44, -4, -44, -4, 44, -8, 44)
-
-[node name="FloorSeamTwo" type="Polygon2D" parent="."]
-color = Color(0.025, 0.045, 0.055, 1)
-polygon = PackedVector2Array(56, -44, 60, -44, 60, 44, 56, 44)
-
-[node name="HazardStripeOne" type="Polygon2D" parent="."]
-color = Color(0.58, 0.34, 0.12, 1)
-polygon = PackedVector2Array(8, -44, 12, -44, 12, -40, 8, -40)
-
-[node name="HazardStripeTwo" type="Polygon2D" parent="."]
-color = Color(0.58, 0.34, 0.12, 1)
-polygon = PackedVector2Array(72, 40, 76, 40, 76, 44, 72, 44)
-
-[node name="PipeUpper" type="Polygon2D" parent="."]
-color = Color(0.19, 0.29, 0.31, 1)
-polygon = PackedVector2Array(-64, -60, 144, -60, 144, -56, -64, -56)
-
-[node name="PipeUpperHighlight" type="Polygon2D" parent="."]
-color = Color(0.35, 0.47, 0.45, 1)
-polygon = PackedVector2Array(-64, -60, 144, -60, 144, -58, -64, -58)
-
-[node name="CableRun" type="Sprite2D" parent="."]
-position = Vector2(-40, 48)
-texture = ExtResource("1_props")
-region_enabled = true
-region_rect = Rect2(112, 0, 16, 16)
-
-[node name="WallScreen" type="Sprite2D" parent="."]
-position = Vector2(32, -48)
-texture = ExtResource("1_props")
-region_enabled = true
-region_rect = Rect2(80, 0, 16, 16)
-
-[node name="AmberSignal" type="Sprite2D" parent="."]
-position = Vector2(-56, -48)
-texture = ExtResource("1_props")
-region_enabled = true
-region_rect = Rect2(48, 0, 16, 16)
-
-[node name="RedSignal" type="Sprite2D" parent="."]
-position = Vector2(120, 48)
-texture = ExtResource("1_props")
-region_enabled = true
-region_rect = Rect2(64, 0, 16, 16)
+[node name="RoomArtwork" type="Sprite2D" parent="."]
+texture = ExtResource("1_art")
+position = Vector2(40, 0)

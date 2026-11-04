@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="72" viewBox="0 0 40 72" shape-rendering="crispEdges">
+  <path fill="#080f15" d="M4 66h32v2h2v2H2v-2h2z"/>
+  <path fill="#0b171f" d="M6 1h28v2h3v3h2v58h-2v3h-3v2H6v-2H3v-3H1V6h2V3h3z"/>
+  <path fill="#263e47" d="M6 3h28v2h3v60h-3v2H6v-2H3V5h3z"/>
+  <path fill="#758d88" d="M6 3h28v2h3v2H3V5h3zM3 7h2v56H3z"/>
+  <path fill="#13252e" d="M7 9h26v48H7z"/>
+  <path fill="#36535c" d="M8 10h24v44H8z"/>
+  <path fill="#17303b" d="M10 12h20v40H10z"/>
+  <path fill="#1e4652" d="M11 14h18v34H11z"/>
+  <path fill="#246473" d="M12 16h16v30H12z"/>
+  <path fill="#4ab7c1" d="M13 18h2v26h-2z"/>
+  <path fill="#71d5d9" d="M14 19h2v18h-2z"/>
+  <path fill="#b0ece2" d="M15 20h1v7h-1zM15 30h1v3h-1z"/>
+  <path fill="#327c89" d="M25 16h2v29h-2z"/>
+  <path fill="#152630" d="M31 22h3v16h-3z"/>
+  <path fill="#0b1c25" d="M32 24h2v11h-2z"/>
+  <path fill="#3baeb8" d="M32 25h2v3h-2zM32 30h2v1h-2z"/>
+  <path fill="#e1a34f" d="M32 33h2v2h-2z"/>
+  <path fill="#a2e8df" d="M32 25h1v1h-1z"/>
+  <path fill="#13232c" d="M9 49h22v4H9z"/>
+  <path fill="#516b70" d="M8 52h24v2H8z"/>
+  <path fill="#0e1c24" d="M6 56h28v7H6z"/>
+  <path fill="#314a52" d="M8 58h24v3H8z"/>
+  <path fill="#172a33" d="M10 59h20v1H10z"/>
+  <path fill="#8da59b" d="M7 65h26v2H7z"/>
+  <path fill="#0b1820" d="M8 67h24v3H8z"/>
+  <path fill="#405c63" d="M10 68h20v2H10z"/>
+  <path fill="#1a2e37" d="M2 14h4v30H2zM34 14h4v30h-4z"/>
+  <path fill="#69837e" d="M3 15h2v26H3zM35 15h2v26h-2z"/>
+  <path fill="#162831" d="M4 20h2v3H4zM34 20h2v3h-2zM4 37h2v3H4zM34 37h2v3h-2z"/>
+  <path fill="#192d36" d="M10 4h20v4H10z"/>
+  <path fill="#0d1a22" d="M12 5h16v2H12z"/>
+  <path fill="#38535a" d="M13 5h12v1H13z"/>
+  <path fill="#3baeb8" d="M8 61h5v2H8zM27 61h5v2h-5z"/>
+  <path fill="#9fe7df" d="M9 61h2v1H9zM28 61h2v1h-2z"/>
+  <path fill="#e1a34f" d="M4 47h3v2H4zM33 47h3v2h-3z"/>
+  <path fill="#f3c477" d="M4 47h2v1H4zM34 47h1v1h-1z"/>
+  <path fill="#14232b" d="M12 63h16v4H12z"/>
+  <path fill="#506c72" d="M14 64h12v1H14z"/>
+  <path fill="#182b34" d="M16 65h8v1h-8z"/>
+  <path fill="#101d26" d="M14 70h12v2H14z"/>
+</svg>
