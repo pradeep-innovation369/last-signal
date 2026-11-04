@@ -526,6 +526,7 @@ func _build_engineering_room() -> void:
 	_reactor("PowerTransferUnit", Vector3(220, 0, 76), 0.85)
 	_terminal("SecurityConsole", Vector3(264, 0, -102), 1.05)
 	_terminal("EngineeringDataLogTerminal", Vector3(440, 0, -66), 0.9)
+	_terminal("CommandBridgeTerminal", Vector3(440, 0, 48), 1.0)
 	_panel("EngineeringWallRack", Vector3(362, 23, -108), Vector3(76, 24, 8))
 	_box("RackDisplayPrimary", Vector3(350, 31, -102), Vector3(22, 8, 1), "cyan_soft")
 	_box("RackDisplaySecondary", Vector3(378, 31, -102), Vector3(18, 8, 1), "glass")

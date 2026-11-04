@@ -8,6 +8,8 @@ signal restart_requested
 signal communications_transmission_discovered
 signal navigation_flight_record_discovered
 signal security_incident_record_discovered
+signal command_bridge_evidence_discovered
+signal command_bridge_ending_confirmed(ending_id: String)
 
 @onready var interaction_hint: Label = $Root/InteractionHint
 @onready var message_frame: ColorRect = $Root/MessageFrame
@@ -18,6 +20,7 @@ signal security_incident_record_discovered
 @onready var navigation_console: NavigationConsoleController = $NavigationConsolePanel
 @onready var security_console: SecurityConsoleController = $SecurityConsolePanel
 @onready var crew_data_log_panel: CrewDataLogController = $CrewDataLogPanel
+@onready var command_bridge_panel: CommandBridgeController = $CommandBridgePanel
 @onready var log_archive_button: Button = $Root/LogArchiveButton
 @onready var save_game_button: Button = $Root/SaveGameButton
 @onready var objective_title: Label = $Root/ObjectiveTitle
@@ -49,6 +52,10 @@ func _ready() -> void:
 	security_console.incident_record_discovered.connect(
 		_on_security_incident_record_discovered
 	)
+	command_bridge_panel.closed.connect(_on_power_console_closed)
+	command_bridge_panel.evidence_discovered.connect(_on_command_bridge_evidence_discovered)
+	command_bridge_panel.ending_confirmed.connect(_on_command_bridge_ending_confirmed)
+	command_bridge_panel.restart_requested.connect(_on_restart_button_pressed)
 	navigation_console.closed.connect(_on_power_console_closed)
 	security_console.closed.connect(_on_power_console_closed)
 	crew_data_log_panel.closed.connect(_on_power_console_closed)
@@ -210,6 +217,18 @@ func close_security_console() -> void:
 	security_console.close()
 
 
+func open_command_bridge(evidence_discovered: bool) -> void:
+	command_bridge_panel.open(evidence_discovered)
+
+
+func close_command_bridge() -> void:
+	command_bridge_panel.close()
+
+
+func show_ending(ending_id: String) -> void:
+	command_bridge_panel.show_ending(ending_id)
+
+
 func open_crew_data_log(log_system: CrewDataLogSystem, log_id: String) -> void:
 	_crew_data_log_system = log_system
 	crew_data_log_panel.open_log(log_system, log_id)
@@ -242,6 +261,7 @@ func is_any_console_open() -> bool:
 		or communications_console.visible
 		or navigation_console.visible
 		or security_console.visible
+		or command_bridge_panel.visible
 		or crew_data_log_panel.visible
 	)
 
@@ -255,6 +275,8 @@ func close_open_console() -> void:
 		navigation_console.close()
 	elif security_console.visible:
 		security_console.close()
+	elif command_bridge_panel.visible:
+		command_bridge_panel.close()
 	elif crew_data_log_panel.visible:
 		crew_data_log_panel.close()
 
@@ -281,6 +303,14 @@ func _on_navigation_flight_record_discovered() -> void:
 
 func _on_security_incident_record_discovered() -> void:
 	security_incident_record_discovered.emit()
+
+
+func _on_command_bridge_evidence_discovered() -> void:
+	command_bridge_evidence_discovered.emit()
+
+
+func _on_command_bridge_ending_confirmed(ending_id: String) -> void:
+	command_bridge_ending_confirmed.emit(ending_id)
 
 
 func _on_restart_button_pressed() -> void:

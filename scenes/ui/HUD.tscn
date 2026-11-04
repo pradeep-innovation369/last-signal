@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/HUDController.gd" id="1_hud"]
 [ext_resource type="PackedScene" path="res://scenes/ui/PowerConsolePanel.tscn" id="2_power_console"]
@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/NavigationConsolePanel.tscn" id="5_navigation"]
 [ext_resource type="PackedScene" path="res://scenes/ui/SecurityConsolePanel.tscn" id="6_security"]
 [ext_resource type="PackedScene" path="res://scenes/ui/CrewDataLogPanel.tscn" id="7_crew_logs"]
+[ext_resource type="PackedScene" path="res://scenes/ui/CommandBridgePanel.tscn" id="8_command_bridge"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
@@ -209,6 +210,8 @@ vertical_alignment = 1
 [node name="SecurityConsolePanel" parent="." instance=ExtResource("6_security")]
 
 [node name="CrewDataLogPanel" parent="." instance=ExtResource("7_crew_logs")]
+
+[node name="CommandBridgePanel" parent="." instance=ExtResource("8_command_bridge")]
 
 [node name="GameOverOverlay" type="Control" parent="."]
 visible = false

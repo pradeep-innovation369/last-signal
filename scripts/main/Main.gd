@@ -4,6 +4,7 @@ const POWER_CONSOLE_INTERACTION_DISTANCE: float = 32.0
 const COMMUNICATIONS_CONSOLE_INTERACTION_DISTANCE: float = 32.0
 const NAVIGATION_CONSOLE_INTERACTION_DISTANCE: float = 32.0
 const SECURITY_CONSOLE_INTERACTION_DISTANCE: float = 32.0
+const COMMAND_BRIDGE_INTERACTION_DISTANCE: float = 32.0
 const SKIP_SAVE_RESTORE_META: String = "last_signal_skip_save_restore_once"
 const OPENING_TUTORIAL_TEXT: String = (
 	"LIFE SUPPORT UNSTABLE\n"
@@ -15,6 +16,7 @@ const OPENING_TUTORIAL_TEXT: String = (
 @onready var communications_console: Interactable = $WorldVisuals/DepthSort/CommunicationsConsole
 @onready var navigation_console: Interactable = $WorldVisuals/DepthSort/NavigationConsole
 @onready var security_console: Interactable = $WorldVisuals/DepthSort/SecurityConsole
+@onready var command_bridge_terminal: Interactable = $WorldVisuals/DepthSort/CommandBridgeTerminal
 @onready var crew_data_logs: Node2D = $WorldVisuals/DepthSort/CrewDataLogs
 @onready var hud: HUDController = $HUD
 @onready var player: PlayerController = $WorldVisuals/DepthSort/Player
@@ -37,6 +39,9 @@ var _is_restoring_saved_game: bool = false
 var _communications_transmission_discovered: bool = false
 var _navigation_flight_record_discovered: bool = false
 var _security_incident_record_discovered: bool = false
+var _command_bridge_evidence_discovered: bool = false
+var _ending_id: String = ""
+var _is_ending: bool = false
 
 
 func _ready() -> void:
@@ -60,6 +65,10 @@ func _ready() -> void:
 	hud.security_incident_record_discovered.connect(
 		_on_security_incident_record_discovered
 	)
+	hud.command_bridge_evidence_discovered.connect(
+		_on_command_bridge_evidence_discovered
+	)
+	hud.command_bridge_ending_confirmed.connect(_on_command_bridge_ending_confirmed)
 	var tree_root := get_tree().root
 	var skip_save_restore := tree_root.has_meta(SKIP_SAVE_RESTORE_META)
 	if skip_save_restore:
@@ -68,7 +77,7 @@ func _ready() -> void:
 		_restore_saved_game()
 	if player.global_position.x >= -80.0:
 		_dismiss_opening_instruction()
-	if not _opening_instruction_dismissed and not _is_game_over:
+	if not _opening_instruction_dismissed and not _is_game_over and not _is_ending:
 		hud.show_opening_tutorial(_get_opening_instruction())
 	else:
 		hud.dismiss_opening_tutorial()
@@ -88,6 +97,11 @@ func _ready() -> void:
 	security_console.player_entered.connect(_on_interactable_entered)
 	security_console.player_exited.connect(_on_interactable_exited)
 	security_console.interaction_requested.connect(_on_security_console_interaction_requested)
+	command_bridge_terminal.player_entered.connect(_on_interactable_entered)
+	command_bridge_terminal.player_exited.connect(_on_interactable_exited)
+	command_bridge_terminal.interaction_requested.connect(
+		_on_command_bridge_interaction_requested
+	)
 	for log_node: Node in crew_data_logs.get_children():
 		var log_interactable := log_node as Interactable
 		log_interactable.player_entered.connect(_on_interactable_entered)
@@ -97,6 +111,9 @@ func _ready() -> void:
 	for location: LocationArea in $Gameplay/Locations.get_children():
 		location.location_entered.connect(_on_location_entered)
 	_sync_objectives_with_player_position()
+	if _is_ending:
+		player.set_physics_process(false)
+		hud.show_ending(_ending_id)
 
 
 func _process(delta: float) -> void:
@@ -104,7 +121,7 @@ func _process(delta: float) -> void:
 	_update_power_console_proximity()
 	if not _opening_instruction_dismissed and player.global_position.x >= -80.0:
 		_dismiss_opening_instruction()
-	if not _is_game_over:
+	if not _is_game_over and not _is_ending:
 		life_support.update(delta)
 	hud.set_player_position(player.global_position)
 
@@ -114,6 +131,7 @@ func _update_power_console_proximity() -> void:
 	_update_console_proximity(communications_console, COMMUNICATIONS_CONSOLE_INTERACTION_DISTANCE)
 	_update_console_proximity(navigation_console, NAVIGATION_CONSOLE_INTERACTION_DISTANCE)
 	_update_console_proximity(security_console, SECURITY_CONSOLE_INTERACTION_DISTANCE)
+	_update_console_proximity(command_bridge_terminal, COMMAND_BRIDGE_INTERACTION_DISTANCE)
 	for log_node: Node in crew_data_logs.get_children():
 		var log_interactable := log_node as Interactable
 		_update_console_proximity(log_interactable, 32.0)
@@ -139,7 +157,7 @@ func _sync_world_view(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _is_game_over:
+	if _is_game_over or _is_ending:
 		get_viewport().set_input_as_handled()
 		return
 
@@ -155,14 +173,14 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_interactable_entered(interactable: Interactable) -> void:
-	if _is_game_over:
+	if _is_game_over or _is_ending:
 		return
 	nearby_interactable = interactable
 	hud.set_interaction_hint(interactable.interaction_hint)
 
 
 func _on_interactable_exited(interactable: Interactable) -> void:
-	if _is_game_over:
+	if _is_game_over or _is_ending:
 		return
 	if nearby_interactable != interactable:
 		return
@@ -175,6 +193,7 @@ func _on_interactable_exited(interactable: Interactable) -> void:
 	hud.close_communications_console()
 	hud.close_navigation_console()
 	hud.close_security_console()
+	hud.close_command_bridge()
 	hud.close_crew_data_log()
 	nearby_interactable = null
 	hud.set_interaction_hint(_get_location_guidance())
@@ -221,14 +240,14 @@ func _sync_objectives_with_player_position() -> void:
 
 
 func _on_power_console_interaction_requested(message: String) -> void:
-	if _is_game_over:
+	if _is_game_over or _is_ending:
 		return
 	hud.open_power_console(power_management, message)
 	player.set_physics_process(false)
 
 
 func _on_communications_console_interaction_requested(_message: String) -> void:
-	if _is_game_over:
+	if _is_game_over or _is_ending:
 		return
 	_begin_console_objective(
 		"investigate_communications",
@@ -242,7 +261,7 @@ func _on_communications_console_interaction_requested(_message: String) -> void:
 
 
 func _on_navigation_console_interaction_requested(_message: String) -> void:
-	if _is_game_over:
+	if _is_game_over or _is_ending:
 		return
 	_begin_console_objective(
 		"investigate_navigation",
@@ -257,7 +276,7 @@ func _on_navigation_console_interaction_requested(_message: String) -> void:
 
 
 func _on_security_console_interaction_requested(_message: String) -> void:
-	if _is_game_over:
+	if _is_game_over or _is_ending:
 		return
 	_begin_console_objective(
 		"access_security",
@@ -271,8 +290,21 @@ func _on_security_console_interaction_requested(_message: String) -> void:
 	player.set_physics_process(false)
 
 
+func _on_command_bridge_interaction_requested(_message: String) -> void:
+	if _is_game_over or _is_ending:
+		return
+	if (
+		objective_system.get_current_objective_id() != "reach_command_bridge"
+		and not objective_system.get_completed_objective_ids().has("reach_command_bridge")
+	):
+		hud.show_message("COMMAND RECORD LOCKED\nComplete the ship investigations first.")
+		return
+	hud.open_command_bridge(_command_bridge_evidence_discovered)
+	player.set_physics_process(false)
+
+
 func _on_crew_data_log_interaction_requested(log_id: String) -> void:
-	if _is_game_over:
+	if _is_game_over or _is_ending:
 		return
 	if not crew_data_log_system.has_log(log_id):
 		push_error("Main: Crew data log terminal references unknown log '%s'." % log_id)
@@ -314,6 +346,12 @@ func _restore_saved_game() -> void:
 	_security_incident_record_discovered = (
 		saved_state["security_incident_record_discovered"]
 	)
+	_command_bridge_evidence_discovered = (
+		saved_state["command_bridge_evidence_discovered"]
+	)
+	_ending_id = saved_state["ending_id"]
+	if not _ending_id.is_empty():
+		_command_bridge_evidence_discovered = true
 	player.global_position = saved_position
 	for system_name: String in PowerManagement.SYSTEM_NAMES:
 		if not power_management.set_system_allocation(system_name, 0):
@@ -336,6 +374,12 @@ func _restore_saved_game() -> void:
 		saved_position
 	)
 	objective_system.restore_state(objective_state)
+	if not _ending_id.is_empty():
+		if _all_final_investigation_prerequisites_met() and not _is_game_over:
+			_is_ending = true
+		else:
+			push_warning("Main: Saved ending did not satisfy investigation progress; ignoring it.")
+			_ending_id = ""
 	_is_restoring_saved_game = false
 	_check_current_objective_condition(objective_system.get_current_objective_id())
 
@@ -354,17 +398,47 @@ func _migrate_objective_state(state: Dictionary, saved_position: Vector2) -> Dic
 	if saved_position.x >= 160.0 and not completed_ids.has("reach_engineering"):
 		completed_ids.append("reach_engineering")
 
+	var validated_completed_ids: Array[String] = []
+	for objective: Dictionary in ObjectiveSystem.OBJECTIVES:
+		var objective_id: String = objective["id"]
+		if not completed_ids.has(objective_id):
+			break
+		if not _objective_completion_is_valid(objective_id):
+			break
+		validated_completed_ids.append(objective_id)
+
 	return {
-		"schema_version": 3,
+		"schema_version": 4,
 		"current_id": "",
-		"completed_ids": completed_ids,
+		"completed_ids": validated_completed_ids,
 	}
 
 
+func _objective_completion_is_valid(objective_id: String) -> bool:
+	match objective_id:
+		"investigate_communications":
+			return _communications_transmission_discovered
+		"investigate_navigation":
+			return _navigation_flight_record_discovered
+		"access_security":
+			return _security_incident_record_discovered
+		"review_crew_logs":
+			return crew_data_log_system.are_all_logs_discovered()
+		"reach_command_bridge":
+			return _command_bridge_evidence_discovered
+	return true
+
+
 func _on_save_game_requested() -> void:
-	if _is_game_over:
+	if _is_game_over or _is_ending:
 		return
-	var save_succeeded := save_game_system.save_game(
+
+	var save_succeeded := _save_current_game()
+	hud.show_save_result(save_succeeded)
+
+
+func _save_current_game() -> bool:
+	return save_game_system.save_game(
 		player.global_position,
 		life_support,
 		power_management,
@@ -373,9 +447,10 @@ func _on_save_game_requested() -> void:
 		_opening_instruction_dismissed,
 		_communications_transmission_discovered,
 		_navigation_flight_record_discovered,
-		_security_incident_record_discovered
+		_security_incident_record_discovered,
+		_command_bridge_evidence_discovered,
+		_ending_id
 	)
-	hud.show_save_result(save_succeeded)
 
 
 func _on_power_allocation_changed(system_name: String, _previous: int, new_allocation: int) -> void:
@@ -439,13 +514,63 @@ func _on_security_incident_record_discovered() -> void:
 		_pending_console_objective_id = "access_security"
 
 
+func _on_command_bridge_evidence_discovered() -> void:
+	if _command_bridge_evidence_discovered:
+		return
+	_command_bridge_evidence_discovered = true
+	if objective_system.get_current_objective_id() == "reach_command_bridge":
+		objective_system.complete_current_objective("reach_command_bridge")
+
+
+func _on_command_bridge_ending_confirmed(ending_id: String) -> void:
+	if (
+		_is_game_over
+		or _is_ending
+		or not hud.command_bridge_panel.visible
+		or not _all_final_investigation_prerequisites_met()
+	):
+		return
+	if not objective_system.get_completed_objective_ids().has("reach_command_bridge"):
+		return
+	if ending_id != "response" and ending_id != "silence":
+		push_error("Main: Refusing unknown ending id '%s'." % ending_id)
+		return
+
+	_ending_id = ending_id
+	_is_ending = true
+	player.set_physics_process(false)
+	_save_current_game()
+	hud.show_ending(_ending_id)
+
+
+func _all_final_investigation_prerequisites_met() -> bool:
+	var completed_ids := objective_system.get_completed_objective_ids()
+	for required_id: String in [
+		"restore_life_support",
+		"investigate_communications",
+		"investigate_navigation",
+		"access_security",
+		"review_crew_logs",
+		"reach_command_bridge",
+	]:
+		if not completed_ids.has(required_id):
+			return false
+	return (
+		_communications_transmission_discovered
+		and _navigation_flight_record_discovered
+		and _security_incident_record_discovered
+		and _command_bridge_evidence_discovered
+		and crew_data_log_system.are_all_logs_discovered()
+	)
+
+
 func _on_oxygen_changed(oxygen_level: float) -> void:
 	if oxygen_level <= 0.0:
 		_trigger_game_over()
 
 
 func _trigger_game_over() -> void:
-	if _is_game_over:
+	if _is_game_over or _is_ending:
 		return
 	_is_game_over = true
 	_pending_console_objective_id = ""
@@ -453,6 +578,7 @@ func _trigger_game_over() -> void:
 	hud.close_communications_console()
 	hud.close_navigation_console()
 	hud.close_security_console()
+	hud.close_command_bridge()
 	hud.close_crew_data_log()
 	player.set_physics_process(false)
 	nearby_interactable = null
@@ -460,9 +586,11 @@ func _trigger_game_over() -> void:
 
 
 func _restart_game() -> void:
-	if not _is_game_over:
+	if not _is_game_over and not _is_ending:
 		return
 
+	if not save_game_system.clear_save():
+		return
 	var tree_root := get_tree().root
 	tree_root.set_meta(SKIP_SAVE_RESTORE_META, true)
 	var reload_error := get_tree().reload_current_scene()
@@ -495,6 +623,8 @@ func _check_current_objective_condition(objective_id: String) -> void:
 	elif objective_id == "investigate_navigation" and _navigation_flight_record_discovered:
 		objective_system.complete_current_objective(objective_id)
 	elif objective_id == "access_security" and _security_incident_record_discovered:
+		objective_system.complete_current_objective(objective_id)
+	elif objective_id == "reach_command_bridge" and _command_bridge_evidence_discovered:
 		objective_system.complete_current_objective(objective_id)
 
 

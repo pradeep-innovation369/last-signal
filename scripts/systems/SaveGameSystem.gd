@@ -14,7 +14,9 @@ func save_game(
 	opening_tutorial_dismissed: bool,
 	communications_transmission_discovered: bool,
 	navigation_flight_record_discovered: bool,
-	security_incident_record_discovered: bool
+	security_incident_record_discovered: bool,
+	command_bridge_evidence_discovered: bool,
+	ending_id: String
 ) -> bool:
 	var config := ConfigFile.new()
 	config.set_value("save", "version", SAVE_VERSION)
@@ -38,6 +40,12 @@ func save_game(
 		"security_incident_record_discovered",
 		security_incident_record_discovered
 	)
+	config.set_value(
+		"save",
+		"command_bridge_evidence_discovered",
+		command_bridge_evidence_discovered
+	)
+	config.set_value("save", "ending_id", ending_id)
 	for system_name: String in PowerManagement.SYSTEM_NAMES:
 		config.set_value(
 			"power",
@@ -138,11 +146,14 @@ func load_game(
 	var communications_discovered_variant: Variant = config.get_value(
 		"save",
 		"communications_transmission_discovered",
-		false
+		null
 	)
 	var communications_discovered: bool = false
 	if typeof(communications_discovered_variant) == TYPE_BOOL:
 		communications_discovered = communications_discovered_variant
+	elif not config.has_section_key("save", "communications_transmission_discovered"):
+		var completed_objective_ids: Array = objective_state.get("completed_ids", [])
+		communications_discovered = completed_objective_ids.has("investigate_communications")
 	elif config.has_section_key("save", "communications_transmission_discovered"):
 		push_warning(
 			"SaveGameSystem: Communications discovery flag was malformed; using undiscovered state."
@@ -156,6 +167,21 @@ func load_game(
 		config,
 		"security_incident_record_discovered"
 	)
+	var command_bridge_discovered := _load_optional_discovery_flag(
+		config,
+		"command_bridge_evidence_discovered"
+	)
+	var ending_id_variant: Variant = config.get_value("save", "ending_id", "")
+	var ending_id: String = ""
+	if typeof(ending_id_variant) == TYPE_STRING:
+		if ending_id_variant in ["response", "silence"]:
+			ending_id = ending_id_variant
+		elif not ending_id_variant.is_empty():
+			push_warning("SaveGameSystem: Unknown ending id; ignoring saved ending.")
+	else:
+		push_warning("SaveGameSystem: Malformed ending id; ignoring saved ending.")
+	if not ending_id.is_empty():
+		command_bridge_discovered = true
 
 	return {
 		"player_position": player_position,
@@ -167,6 +193,8 @@ func load_game(
 		"communications_transmission_discovered": communications_discovered,
 		"navigation_flight_record_discovered": navigation_discovered,
 		"security_incident_record_discovered": security_discovered,
+		"command_bridge_evidence_discovered": command_bridge_discovered,
+		"ending_id": ending_id,
 	}
 
 
@@ -179,6 +207,16 @@ func _load_optional_discovery_flag(config: ConfigFile, key: String) -> bool:
 			"SaveGameSystem: '%s' was malformed; using undiscovered state." % key
 		)
 	return false
+
+
+func clear_save() -> bool:
+	if not FileAccess.file_exists(SAVE_PATH):
+		return true
+	var remove_error := DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+	if remove_error != OK:
+		push_error("SaveGameSystem: Could not remove save file for a new game (error %d)." % remove_error)
+		return false
+	return true
 
 
 func _validate_objective_state(

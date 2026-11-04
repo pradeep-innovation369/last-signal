@@ -40,6 +40,11 @@ const OBJECTIVES: Array[Dictionary] = [
 		"title": "Review Crew Data Logs",
 		"description": "Recover all three crew logs around the ship.",
 	},
+	{
+		"id": "reach_command_bridge",
+		"title": "Reach Command Bridge",
+		"description": "Bring the evidence together and investigate the ship's final command records.",
+	},
 ]
 
 var _completed_objective_ids: Array[String] = []
@@ -88,7 +93,7 @@ func complete_current_objective(objective_id: String) -> bool:
 
 func get_save_data() -> Dictionary:
 	return {
-		"schema_version": 3,
+		"schema_version": 4,
 		"current_id": get_current_objective_id(),
 		"completed_ids": get_completed_objective_ids(),
 	}

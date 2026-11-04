@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=20 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/world/PowerConsole.tscn" id="2_console"]
@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" path="res://scenes/world/NavigationConsole.tscn" id="17_navigation"]
 [ext_resource type="PackedScene" path="res://scenes/world/SecurityConsole.tscn" id="18_security"]
 [ext_resource type="PackedScene" path="res://scenes/world/CrewDataLogTerminal.tscn" id="19_log_terminal"]
+[ext_resource type="PackedScene" path="res://scenes/world/CommandBridgeTerminal.tscn" id="20_command_bridge"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cryo_divider"]
 size = Vector2(16, 72)
@@ -155,6 +156,9 @@ position = Vector2(-136, -102)
 
 [node name="SecurityConsole" parent="WorldVisuals/DepthSort" instance=ExtResource("18_security")]
 position = Vector2(264, -102)
+
+[node name="CommandBridgeTerminal" parent="WorldVisuals/DepthSort" instance=ExtResource("20_command_bridge")]
+position = Vector2(440, 48)
 
 [node name="CrewDataLogs" type="Node2D" parent="WorldVisuals/DepthSort"]
 
