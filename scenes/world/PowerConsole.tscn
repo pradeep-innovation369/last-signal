@@ -13,7 +13,7 @@ collision_layer = 0
 collision_mask = 1
 script = ExtResource("1_interactable")
 interaction_hint = "E - Use Power Console"
-interaction_message = "Power system offline. Restore auxiliary power."
+interaction_message = "Power management online. Adjust system allocations."
 y_sort_origin = 20
 
 [node name="InteractionRange" type="CollisionShape2D" parent="."]
