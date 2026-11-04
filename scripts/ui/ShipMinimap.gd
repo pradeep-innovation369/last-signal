@@ -3,7 +3,7 @@ class_name ShipMinimap
 
 const WORLD_MIN := Vector2(-360.0, -120.0)
 const WORLD_MAX := Vector2(510.0, 120.0)
-const MAP_RECT := Rect2(5.0, 18.0, 100.0, 34.0)
+const MAP_RECT := Rect2(4.0, 15.0, 84.0, 23.0)
 const MAP_BACKGROUND := Color(0.018, 0.036, 0.049, 0.98)
 const HULL_FILL := Color(0.027, 0.060, 0.072, 1.0)
 const CRYO_FILL := Color(0.045, 0.12, 0.15, 1.0)
@@ -27,9 +27,7 @@ func set_player_position(world_position: Vector2) -> void:
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), MAP_BACKGROUND, true)
 	draw_rect(Rect2(Vector2.ZERO, size), Color(0.12, 0.27, 0.31, 1.0), false, 1.0)
-	draw_rect(Rect2(5.0, 4.0, 3.0, 8.0), MAP_LINE, true)
-	draw_string(ThemeDB.fallback_font, Vector2(12.0, 12.0), "SHIP DECK", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 9, LABEL_COLOR)
-	draw_string(ThemeDB.fallback_font, Vector2(size.x - 6.0, 12.0), "MAP", HORIZONTAL_ALIGNMENT_RIGHT, -1.0, 8, MAP_LINE)
+	draw_string(ThemeDB.fallback_font, Vector2(5.0, 10.0), "Ship layout", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 8, LABEL_COLOR)
 	draw_rect(MAP_RECT, Color(0.012, 0.024, 0.033, 1.0), true)
 
 	var hull := PackedVector2Array([
@@ -68,9 +66,9 @@ func _draw() -> void:
 	_draw_deck(corridor_deck, CORRIDOR_FILL)
 	_draw_deck(engineering_deck, ENGINEERING_FILL)
 
-	_draw_area_label("CRYO", Vector2(-200, 0))
-	_draw_area_label("CORRIDOR", Vector2(40, 0))
-	_draw_area_label("ENGINEERING", Vector2(326, -43))
+	_draw_area_label("Cryo", Vector2(-200, 0))
+	_draw_area_label("Hall", Vector2(40, 0))
+	_draw_area_label("Eng", Vector2(326, -43))
 
 	var marker_position := _world_to_map(_player_position)
 	draw_circle(marker_position, 3.0, Color(0.012, 0.024, 0.033, 1.0))
