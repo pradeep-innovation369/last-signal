@@ -87,6 +87,34 @@ theme_override_colors/font_color = Color(0.96, 0.76, 0.44, 1)
 theme_override_font_sizes/font_size = 8
 horizontal_alignment = 1
 
+[node name="OpeningTutorialFrame" type="ColorRect" parent="Root"]
+visible = false
+offset_left = 99.0
+offset_top = 58.0
+offset_right = 317.0
+offset_bottom = 77.0
+color = Color(0.14, 0.25, 0.29, 1)
+
+[node name="OpeningTutorialPanel" type="ColorRect" parent="Root"]
+visible = false
+offset_left = 100.0
+offset_top = 59.0
+offset_right = 316.0
+offset_bottom = 76.0
+color = Color(0.025, 0.043, 0.060, 0.96)
+
+[node name="OpeningTutorialLabel" type="Label" parent="Root"]
+visible = false
+offset_left = 104.0
+offset_top = 60.0
+offset_right = 312.0
+offset_bottom = 75.0
+theme_override_colors/font_color = Color(0.96, 0.76, 0.44, 1)
+theme_override_font_sizes/font_size = 6
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
 [node name="LogArchiveButton" type="Button" parent="Root"]
 anchors_preset = 1
 anchor_left = 1.0

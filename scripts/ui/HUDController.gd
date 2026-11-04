@@ -19,6 +19,9 @@ signal restart_requested
 @onready var save_game_button: Button = $Root/SaveGameButton
 @onready var objective_title: Label = $Root/ObjectiveTitle
 @onready var objective_description: Label = $Root/ObjectiveDescription
+@onready var opening_tutorial_frame: ColorRect = $Root/OpeningTutorialFrame
+@onready var opening_tutorial_panel: ColorRect = $Root/OpeningTutorialPanel
+@onready var opening_tutorial_label: Label = $Root/OpeningTutorialLabel
 @onready var oxygen_value: Label = $Root/OxygenValue
 @onready var oxygen_bar: ProgressBar = $Root/OxygenBar
 @onready var ship_minimap: ShipMinimap = $Root/ShipMinimap
@@ -114,6 +117,19 @@ func set_player_position(world_position: Vector2) -> void:
 func set_interaction_hint(hint: String) -> void:
 	interaction_hint.text = hint
 	interaction_hint.visible = not hint.is_empty()
+
+
+func show_opening_tutorial(instruction: String) -> void:
+	opening_tutorial_label.text = instruction
+	opening_tutorial_frame.visible = true
+	opening_tutorial_panel.visible = true
+	opening_tutorial_label.visible = true
+
+
+func dismiss_opening_tutorial() -> void:
+	opening_tutorial_frame.visible = false
+	opening_tutorial_panel.visible = false
+	opening_tutorial_label.visible = false
 
 
 func clear_interaction_hint() -> void:

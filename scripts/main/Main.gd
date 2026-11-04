@@ -51,9 +51,11 @@ func _ready() -> void:
 	else:
 		_restore_saved_game()
 	if player.global_position.x >= -80.0:
-		_opening_instruction_dismissed = true
+		_dismiss_opening_instruction()
 	if not _opening_instruction_dismissed and not _is_game_over:
-		hud.set_interaction_hint(_get_opening_instruction())
+		hud.show_opening_tutorial(_get_opening_instruction())
+	else:
+		hud.dismiss_opening_tutorial()
 	hud.set_player_position(player.global_position)
 	hud.power_console_closed.connect(_on_power_console_closed)
 	hud.crew_data_log_opened.connect(_on_crew_data_log_opened)
@@ -83,6 +85,8 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_sync_world_view(delta)
 	_update_power_console_proximity()
+	if not _opening_instruction_dismissed and player.global_position.x >= -80.0:
+		_dismiss_opening_instruction()
 	if not _is_game_over:
 		if _opening_oxygen_grace_remaining > 0.0:
 			_opening_oxygen_grace_remaining = maxf(
@@ -186,15 +190,13 @@ func _dismiss_opening_instruction() -> void:
 	if _opening_instruction_dismissed:
 		return
 	_opening_instruction_dismissed = true
-	hud.clear_interaction_hint()
+	hud.dismiss_opening_tutorial()
 
 
 func _get_location_guidance() -> String:
 	if current_location == "Engineering Room":
 		return "Use the cyan power console or north-wall security console"
 	if current_location == "Cryo Chamber":
-		if not _opening_instruction_dismissed:
-			return _get_opening_instruction()
 		return "Access the navigation console along the north wall"
 	return ""
 
