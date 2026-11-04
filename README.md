@@ -13,6 +13,10 @@ when a save file exists and restores that run. Ending A and Ending B retain thei
 current conclusions and lead to a Chapter 2 continuation teaser; Chapter 2 is not
 currently playable.
 
+Audio routes through the **Master**, **Music**, and **SFX** buses managed by the
+`AudioManager` autoload. The opening title cue is expected at
+`assets/audio/title_opening.wav`.
+
 Move with **WASD** or the **arrow keys**. Approach the power console in Engineering
 and press **E** to read its status. Access the navigation console along the north
 wall of the Cryo Chamber to check the ship's navigation status. The Engineering

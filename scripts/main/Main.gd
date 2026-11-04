@@ -519,8 +519,7 @@ func _show_title_screen() -> void:
 	_is_title_screen = true
 	player.set_physics_process(false)
 	hud.visible = false
-	title_screen.refresh_continue_availability()
-	title_screen.visible = true
+	title_screen.prepare_for_display()
 
 
 func _all_final_investigation_prerequisites_met() -> bool:

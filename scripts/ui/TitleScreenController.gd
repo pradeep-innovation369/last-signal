@@ -16,6 +16,7 @@ var _root_control: Control
 var _content_panel: PanelContainer
 var _continue_button: Button
 var _accent_line: ColorRect
+var _transition_started: bool = false
 
 
 func _ready() -> void:
@@ -24,12 +25,19 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_resize_layout)
 	_resize_layout()
 	visible = true
+	AudioManager.play_title_opening()
 
 
 func refresh_continue_availability() -> void:
 	if not is_instance_valid(_continue_button):
 		return
 	_continue_button.visible = SaveGameSystem.new().has_save_file()
+
+
+func prepare_for_display() -> void:
+	_transition_started = false
+	refresh_continue_availability()
+	visible = true
 
 
 func _build_interface() -> void:
@@ -146,10 +154,7 @@ func _make_button(button_text: String, primary: bool, minimum_size: Vector2) -> 
 	if primary:
 		button.add_theme_color_override("font_color", Color(0.01, 0.04, 0.06, 1.0))
 		button.add_theme_color_override("font_hover_color", Color(0.01, 0.04, 0.06, 1.0))
-		button.add_theme_stylebox_override(
-			"normal",
-			_make_panel_style(CYAN, CYAN)
-		)
+		button.add_theme_stylebox_override("normal", _make_panel_style(CYAN, CYAN))
 		button.add_theme_stylebox_override(
 			"hover",
 			_make_panel_style(Color(0.48, 0.91, 0.93, 1.0), Color(0.48, 0.91, 0.93, 1.0))
@@ -180,11 +185,23 @@ func _resize_layout() -> void:
 
 
 func _on_play_pressed() -> void:
+	if not _begin_title_transition():
+		return
 	play_requested.emit()
 
 
 func _on_continue_pressed() -> void:
+	if not _begin_title_transition():
+		return
 	continue_requested.emit()
+
+
+func _begin_title_transition() -> bool:
+	if _transition_started:
+		return false
+	_transition_started = true
+	AudioManager.fade_title_opening_out()
+	return true
 
 
 func _make_panel_style(background: Color, border: Color) -> StyleBoxFlat:
