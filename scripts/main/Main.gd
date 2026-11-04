@@ -1,8 +1,6 @@
 extends Node2D
 
 @onready var power_console: Interactable = $WorldVisuals/DepthSort/PowerConsole
-# TEMP DEBUG: remove after testing.
-@onready var power_console_range: CollisionShape2D = $WorldVisuals/DepthSort/PowerConsole/InteractionRange
 @onready var hud: HUDController = $HUD
 @onready var player: PlayerController = $WorldVisuals/DepthSort/Player
 @onready var player_camera: Camera2D = $WorldVisuals/DepthSort/Player/Camera2D
@@ -12,9 +10,7 @@ extends Node2D
 
 var power_management: PowerManagement = PowerManagement.new()
 var nearby_interactable: Interactable
-
-# TEMP DEBUG: remove this timer and the marked _process block after testing.
-var _power_console_debug_elapsed: float = 0.0
+var current_location: String = ""
 
 
 func _ready() -> void:
@@ -26,30 +22,11 @@ func _ready() -> void:
 	power_console.interaction_requested.connect(_on_power_console_interaction_requested)
 
 	for location: LocationArea in $Gameplay/Locations.get_children():
-		location.location_entered.connect(hud.set_location)
+		location.location_entered.connect(_on_location_entered)
 
 
 func _process(delta: float) -> void:
 	_sync_world_view(delta)
-
-	# TEMP DEBUG: remove this block after testing.
-	_power_console_debug_elapsed += delta
-	if _power_console_debug_elapsed >= 1.0:
-		_power_console_debug_elapsed = 0.0
-		var overlap_details := PackedStringArray()
-		for body: Node2D in power_console.get_overlapping_bodies():
-			overlap_details.append("%s(layer=%d)" % [body.name, body.collision_layer])
-		print(
-			"PowerConsole debug | player=%s distance=%.1f nearby=%s monitoring=%s shape_disabled=%s overlaps=[%s]"
-			% [
-				player.global_position,
-				player.global_position.distance_to(power_console.global_position),
-				is_instance_valid(nearby_interactable),
-				power_console.monitoring,
-				power_console_range.disabled,
-				", ".join(overlap_details),
-			]
-		)
 
 
 func _sync_world_view(delta: float) -> void:
@@ -75,8 +52,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_interactable_entered(interactable: Interactable) -> void:
-	# TEMP DEBUG: remove this line after testing.
-	print("PowerConsole debug | Main received player_entered from %s" % interactable.name)
 	nearby_interactable = interactable
 	hud.set_interaction_hint(interactable.interaction_hint)
 
@@ -87,8 +62,21 @@ func _on_interactable_exited(interactable: Interactable) -> void:
 
 	hud.close_power_console()
 	nearby_interactable = null
-	hud.set_interaction_hint("")
+	hud.set_interaction_hint(_get_location_guidance())
 	hud.clear_message()
+
+
+func _on_location_entered(location_name: String) -> void:
+	current_location = location_name
+	hud.set_location(location_name)
+	if not is_instance_valid(nearby_interactable):
+		hud.set_interaction_hint(_get_location_guidance())
+
+
+func _get_location_guidance() -> String:
+	if current_location == "Engineering Room":
+		return "Power Console: near the center of Engineering"
+	return ""
 
 
 func _on_power_console_interaction_requested(message: String) -> void:

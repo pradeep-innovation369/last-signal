@@ -12,7 +12,7 @@ size = Vector2(16, 16)
 collision_layer = 0
 collision_mask = 1
 script = ExtResource("1_interactable")
-interaction_hint = "E - Use Power Console"
+interaction_hint = "[E] USE POWER CONSOLE"
 interaction_message = "Power management online. Adjust system allocations."
 y_sort_origin = 20
 

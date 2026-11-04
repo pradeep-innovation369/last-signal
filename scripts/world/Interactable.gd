@@ -19,11 +19,6 @@ func interact() -> void:
 
 
 func _on_body_entered(body: Node2D) -> void:
-	# TEMP DEBUG: remove this line after testing.
-	print(
-		"PowerConsole debug | body_entered body=%s layer=%d groups=%s"
-		% [body.name, body.collision_layer, body.get_groups()]
-	)
 	if body.is_in_group("player"):
 		player_entered.emit(self)
 
