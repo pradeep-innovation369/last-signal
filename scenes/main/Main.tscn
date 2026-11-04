@@ -1,20 +1,11 @@
-[gd_scene load_steps=26 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/world/PowerConsole.tscn" id="2_console"]
 [ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="3_hud"]
 [ext_resource type="Script" path="res://scripts/main/Main.gd" id="4_main"]
 [ext_resource type="Script" path="res://scripts/world/LocationArea.gd" id="5_location"]
-[ext_resource type="PackedScene" path="res://scenes/world/CryoDressing.tscn" id="6_cryo_dressing"]
-[ext_resource type="PackedScene" path="res://scenes/world/CorridorDressing.tscn" id="7_corridor_dressing"]
-[ext_resource type="PackedScene" path="res://scenes/world/EngineeringDressing.tscn" id="8_engineering_dressing"]
-[ext_resource type="Texture2D" path="res://assets/art/environment/cryo_pod_primary.svg" id="9_cryo_pod_primary"]
-[ext_resource type="Texture2D" path="res://assets/art/environment/cryo_pod_compact.svg" id="10_cryo_pod_compact"]
-[ext_resource type="Texture2D" path="res://assets/art/environment/engineering_bench.svg" id="11_engineering_bench"]
-[ext_resource type="Texture2D" path="res://assets/art/environment/cryo_foreground.svg" id="12_cryo_foreground"]
-[ext_resource type="Texture2D" path="res://assets/art/environment/corridor_foreground.svg" id="13_corridor_foreground"]
-[ext_resource type="Texture2D" path="res://assets/art/environment/engineering_foreground.svg" id="14_engineering_foreground"]
-[ext_resource type="Texture2D" path="res://assets/art/environment/side_door_frame.svg" id="15_side_door"]
+[ext_resource type="PackedScene" path="res://scenes/world/ShipWorld3D.tscn" id="16_ship_world"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_outer_horizontal"]
 size = Vector2(800, 16)
@@ -49,63 +40,34 @@ size = Vector2(64, 24)
 [node name="Main" type="Node2D"]
 script = ExtResource("4_main")
 
+[node name="WorldRenderViewport" type="SubViewport" parent="."]
+size = Vector2i(320, 180)
+render_target_update_mode = 3
+own_world_3d = true
+
+[node name="ShipWorld3D" parent="WorldRenderViewport" instance=ExtResource("16_ship_world")]
+
+[node name="WorldRenderLayer" type="CanvasLayer" parent="."]
+layer = -1
+
+[node name="WorldTexture" type="Sprite2D" parent="WorldRenderLayer"]
+position = Vector2(160, 90)
+
 [node name="WorldVisuals" type="Node2D" parent="."]
 
 [node name="Ground" type="Node2D" parent="WorldVisuals"]
+visible = false
 
 [node name="Backdrop" type="Node2D" parent="WorldVisuals"]
+visible = false
 
 [node name="DepthSort" type="Node2D" parent="WorldVisuals"]
 y_sort_enabled = true
 
 [node name="Foreground" type="Node2D" parent="WorldVisuals"]
+visible = false
 
 [node name="Gameplay" type="Node2D" parent="."]
-
-[node name="Floor" type="Polygon2D" parent="WorldVisuals/Ground"]
-color = Color(0.035, 0.055, 0.07, 1)
-polygon = PackedVector2Array(-320, -120, 480, -120, 480, 120, -320, 120)
-
-[node name="RoomFloors" type="Node2D" parent="WorldVisuals/Ground"]
-
-[node name="CryoChamberFloor" type="Polygon2D" parent="WorldVisuals/Ground/RoomFloors"]
-color = Color(0.055, 0.09, 0.11, 1)
-polygon = PackedVector2Array(-312, -112, -88, -112, -88, 112, -312, 112)
-
-[node name="MainCorridorFloor" type="Polygon2D" parent="WorldVisuals/Ground/RoomFloors"]
-color = Color(0.065, 0.095, 0.11, 1)
-polygon = PackedVector2Array(-72, -56, 152, -56, 152, 56, -72, 56)
-
-[node name="EngineeringFloor" type="Polygon2D" parent="WorldVisuals/Ground/RoomFloors"]
-color = Color(0.055, 0.09, 0.11, 1)
-polygon = PackedVector2Array(168, -112, 472, -112, 472, 112, 168, 112)
-
-[node name="CryoDressing" parent="WorldVisuals/Backdrop" instance=ExtResource("6_cryo_dressing")]
-
-[node name="CorridorDressing" parent="WorldVisuals/Backdrop" instance=ExtResource("7_corridor_dressing")]
-
-[node name="EngineeringDressing" parent="WorldVisuals/Backdrop" instance=ExtResource("8_engineering_dressing")]
-
-[node name="CryoPodOne" type="Node2D" parent="WorldVisuals/DepthSort"]
-position = Vector2(-264, -4)
-
-[node name="Sprite2D" type="Sprite2D" parent="WorldVisuals/DepthSort/CryoPodOne"]
-texture = ExtResource("9_cryo_pod_primary")
-position = Vector2(0, -36)
-
-[node name="CryoPodTwo" type="Node2D" parent="WorldVisuals/DepthSort"]
-position = Vector2(-264, 74)
-
-[node name="Sprite2D" type="Sprite2D" parent="WorldVisuals/DepthSort/CryoPodTwo"]
-texture = ExtResource("10_cryo_pod_compact")
-position = Vector2(0, -32)
-
-[node name="EngineeringBench" type="Node2D" parent="WorldVisuals/DepthSort"]
-position = Vector2(408, -46)
-
-[node name="Sprite2D" type="Sprite2D" parent="WorldVisuals/DepthSort/EngineeringBench"]
-texture = ExtResource("11_engineering_bench")
-position = Vector2(0, -20)
 
 [node name="Walls" type="StaticBody2D" parent="Gameplay"]
 collision_layer = 1
@@ -200,25 +162,5 @@ position = Vector2(320, 8)
 
 [node name="Player" parent="WorldVisuals/DepthSort" instance=ExtResource("1_player")]
 position = Vector2(-208, 0)
-
-[node name="CryoForeground" type="Sprite2D" parent="WorldVisuals/Foreground"]
-texture = ExtResource("12_cryo_foreground")
-position = Vector2(-200, 104)
-
-[node name="CorridorForeground" type="Sprite2D" parent="WorldVisuals/Foreground"]
-texture = ExtResource("13_corridor_foreground")
-position = Vector2(40, 104)
-
-[node name="EngineeringForeground" type="Sprite2D" parent="WorldVisuals/Foreground"]
-texture = ExtResource("14_engineering_foreground")
-position = Vector2(320, 104)
-
-[node name="CryoDoorFrame" type="Sprite2D" parent="WorldVisuals/Backdrop"]
-texture = ExtResource("15_side_door")
-position = Vector2(-80, 0)
-
-[node name="EngineeringDoorFrame" type="Sprite2D" parent="WorldVisuals/Backdrop"]
-texture = ExtResource("15_side_door")
-position = Vector2(160, 0)
 
 [node name="HUD" parent="." instance=ExtResource("3_hud")]

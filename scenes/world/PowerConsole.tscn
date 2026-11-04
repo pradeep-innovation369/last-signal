@@ -1,7 +1,6 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/Interactable.gd" id="1_interactable"]
-[ext_resource type="Texture2D" path="res://assets/art/environment/power_console.svg" id="2_art"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_console"]
 size = Vector2(40, 40)
@@ -26,6 +25,3 @@ collision_mask = 1
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ConsoleBody"]
 shape = SubResource("RectangleShape2D_console_body")
-
-[node name="Artwork" type="Sprite2D" parent="."]
-texture = ExtResource("2_art")
