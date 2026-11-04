@@ -4,7 +4,8 @@ class_name CommandBridgeController
 signal closed
 signal evidence_discovered
 signal ending_confirmed(ending_id: String)
-signal restart_requested
+signal return_to_title_requested
+signal new_game_requested
 
 const PANEL_SIZE := Vector2(288.0, 164.0)
 const VIEWPORT_MARGIN: float = 6.0
@@ -41,10 +42,19 @@ var _confirm_button: Button
 var _cancel_button: Button
 var _ending_title: Label
 var _ending_body: Label
-var _restart_button: Button
+var _continue_button: Button
+var _continuation_title: Label
+var _continuation_status: Label
+var _chapter_title: Label
+var _chapter_quote: Label
+var _availability_label: Label
+var _return_to_title_button: Button
+var _new_game_button: Button
 var _evidence_discovered: bool = false
 var _selected_ending: String = ""
 var _is_ending: bool = false
+var _continuation_shown: bool = false
+var _ending_presentation_id: int = 0
 
 
 func _ready() -> void:
@@ -75,6 +85,9 @@ func show_ending(ending_id: String) -> void:
 		return
 
 	_is_ending = true
+	_continuation_shown = false
+	_ending_presentation_id += 1
+	var presentation_id := _ending_presentation_id
 	_selected_ending = ""
 	_title_label.text = "MISSION RECORD CLOSED"
 	_close_button.visible = false
@@ -98,7 +111,40 @@ func show_ending(ending_id: String) -> void:
 		)
 	_ending_title.visible = true
 	_ending_body.visible = true
-	_restart_button.visible = true
+	_continue_button.text = "CONTINUE"
+	_continue_button.visible = true
+	_continuation_title.visible = false
+	_continuation_status.visible = false
+	_chapter_title.visible = false
+	_chapter_quote.visible = false
+	_availability_label.visible = false
+	_return_to_title_button.visible = false
+	_new_game_button.visible = false
+	visible = true
+	_resize_panel()
+	get_tree().create_timer(5.0).timeout.connect(
+		_on_ending_presentation_timeout.bind(presentation_id),
+		CONNECT_ONE_SHOT
+	)
+
+
+func show_continuation() -> void:
+	if not visible or not _is_ending or _continuation_shown:
+		return
+
+	_continuation_shown = true
+	_ending_presentation_id += 1
+	_title_label.text = "NEXT TRANSMISSION"
+	_ending_title.visible = false
+	_ending_body.visible = false
+	_continue_button.visible = false
+	_continuation_title.visible = true
+	_continuation_status.visible = true
+	_chapter_title.visible = true
+	_chapter_quote.visible = true
+	_availability_label.visible = true
+	_return_to_title_button.visible = true
+	_new_game_button.visible = true
 	visible = true
 	_resize_panel()
 
@@ -216,14 +262,50 @@ func _build_interface() -> void:
 
 	_ending_title = _make_label(content, ACCENT)
 	_ending_title.add_theme_font_size_override("font_size", 11)
+	_ending_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_ending_title.visible = false
 	_ending_body = _make_label(content, PRIMARY_TEXT)
+	_ending_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_ending_body.visible = false
-	_restart_button = _make_button("RESTART / NEW GAME", Vector2(0.0, 22.0))
-	_restart_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_restart_button.visible = false
-	_restart_button.pressed.connect(_on_restart_button_pressed)
-	content.add_child(_restart_button)
+	_continue_button = _make_button("CONTINUE", Vector2(0.0, 22.0))
+	_continue_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_continue_button.visible = false
+	_continue_button.pressed.connect(show_continuation)
+	content.add_child(_continue_button)
+
+	_continuation_title = _make_label(content, ACCENT)
+	_continuation_title.text = "LAST SIGNAL"
+	_continuation_title.add_theme_font_size_override("font_size", 14)
+	_continuation_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_continuation_title.visible = false
+	_continuation_status = _make_label(content, PRIMARY_TEXT)
+	_continuation_status.text = "CONTINUES..."
+	_continuation_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_continuation_status.visible = false
+	_chapter_title = _make_label(content, PRIMARY_TEXT)
+	_chapter_title.text = "CHAPTER 2\nBEYOND THE SIGNAL"
+	_chapter_title.add_theme_font_size_override("font_size", 9)
+	_chapter_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_chapter_title.visible = false
+	_chapter_quote = _make_label(content, MUTED_TEXT)
+	_chapter_quote.text = "\"The signal was never the end.\""
+	_chapter_quote.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_chapter_quote.visible = false
+	_availability_label = _make_label(content, Color(0.86, 0.43, 0.38, 1.0))
+	_availability_label.text = "COMING IN THE NEXT CHAPTER"
+	_availability_label.add_theme_font_size_override("font_size", 7)
+	_availability_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_availability_label.visible = false
+	_return_to_title_button = _make_button("RETURN TO TITLE", Vector2(0.0, 20.0))
+	_return_to_title_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_return_to_title_button.visible = false
+	_return_to_title_button.pressed.connect(_on_return_to_title_pressed)
+	content.add_child(_return_to_title_button)
+	_new_game_button = _make_button("NEW GAME", Vector2(0.0, 20.0))
+	_new_game_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_new_game_button.visible = false
+	_new_game_button.pressed.connect(_on_new_game_pressed)
+	content.add_child(_new_game_button)
 
 
 func _make_label(parent: Node, color: Color) -> Label:
@@ -282,8 +364,18 @@ func _on_cancel_selection() -> void:
 	_selection_label.text = "Select a response. Your choice will not be sent until confirmed."
 
 
-func _on_restart_button_pressed() -> void:
-	restart_requested.emit()
+func _on_return_to_title_pressed() -> void:
+	return_to_title_requested.emit()
+
+
+func _on_new_game_pressed() -> void:
+	new_game_requested.emit()
+
+
+func _on_ending_presentation_timeout(presentation_id: int) -> void:
+	if presentation_id != _ending_presentation_id or not visible:
+		return
+	show_continuation()
 
 
 func _resize_panel() -> void:

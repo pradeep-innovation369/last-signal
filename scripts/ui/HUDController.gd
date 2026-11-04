@@ -10,6 +10,8 @@ signal navigation_flight_record_discovered
 signal security_incident_record_discovered
 signal command_bridge_evidence_discovered
 signal command_bridge_ending_confirmed(ending_id: String)
+signal return_to_title_requested
+signal new_game_requested
 
 @onready var interaction_hint: Label = $Root/InteractionHint
 @onready var message_frame: ColorRect = $Root/MessageFrame
@@ -55,7 +57,8 @@ func _ready() -> void:
 	command_bridge_panel.closed.connect(_on_power_console_closed)
 	command_bridge_panel.evidence_discovered.connect(_on_command_bridge_evidence_discovered)
 	command_bridge_panel.ending_confirmed.connect(_on_command_bridge_ending_confirmed)
-	command_bridge_panel.restart_requested.connect(_on_restart_button_pressed)
+	command_bridge_panel.return_to_title_requested.connect(_on_return_to_title_requested)
+	command_bridge_panel.new_game_requested.connect(_on_new_game_requested)
 	navigation_console.closed.connect(_on_power_console_closed)
 	security_console.closed.connect(_on_power_console_closed)
 	crew_data_log_panel.closed.connect(_on_power_console_closed)
@@ -311,6 +314,14 @@ func _on_command_bridge_evidence_discovered() -> void:
 
 func _on_command_bridge_ending_confirmed(ending_id: String) -> void:
 	command_bridge_ending_confirmed.emit(ending_id)
+
+
+func _on_return_to_title_requested() -> void:
+	return_to_title_requested.emit()
+
+
+func _on_new_game_requested() -> void:
+	new_game_requested.emit()
 
 
 func _on_restart_button_pressed() -> void:

@@ -5,6 +5,10 @@ const SAVE_PATH: String = "user://last_signal_save.cfg"
 const SAVE_VERSION: int = 1
 
 
+func has_save_file() -> bool:
+	return FileAccess.file_exists(SAVE_PATH)
+
+
 func save_game(
 	player_position: Vector2,
 	life_support: LifeSupport,

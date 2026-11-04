@@ -6,6 +6,7 @@ const NAVIGATION_CONSOLE_INTERACTION_DISTANCE: float = 32.0
 const SECURITY_CONSOLE_INTERACTION_DISTANCE: float = 32.0
 const COMMAND_BRIDGE_INTERACTION_DISTANCE: float = 32.0
 const SKIP_SAVE_RESTORE_META: String = "last_signal_skip_save_restore_once"
+const START_NEW_GAME_META: String = "last_signal_start_new_game_once"
 const OPENING_TUTORIAL_TEXT: String = (
 	"LIFE SUPPORT UNSTABLE\n"
 	+ "Oxygen levels are decreasing.\n"
@@ -24,6 +25,7 @@ const OPENING_TUTORIAL_TEXT: String = (
 @onready var render_viewport: SubViewport = $WorldRenderViewport
 @onready var ship_world: ShipWorld3D = $WorldRenderViewport/ShipWorld3D
 @onready var world_texture: Sprite2D = $WorldRenderLayer/WorldTexture
+@onready var title_screen: TitleScreenController = $TitleScreen
 
 var power_management: PowerManagement = PowerManagement.new()
 var life_support: LifeSupport
@@ -42,6 +44,8 @@ var _security_incident_record_discovered: bool = false
 var _command_bridge_evidence_discovered: bool = false
 var _ending_id: String = ""
 var _is_ending: bool = false
+var _is_title_screen: bool = true
+var _is_starting_new_game: bool = false
 
 
 func _ready() -> void:
@@ -56,6 +60,10 @@ func _ready() -> void:
 	crew_data_log_system.log_discovered.connect(_on_crew_log_discovered)
 	life_support.oxygen_changed.connect(_on_oxygen_changed)
 	hud.restart_requested.connect(_restart_game)
+	title_screen.play_requested.connect(_start_new_game)
+	title_screen.continue_requested.connect(_on_continue_requested)
+	hud.return_to_title_requested.connect(_show_title_screen)
+	hud.new_game_requested.connect(_start_new_game)
 	hud.communications_transmission_discovered.connect(
 		_on_communications_transmission_discovered
 	)
@@ -70,6 +78,9 @@ func _ready() -> void:
 	)
 	hud.command_bridge_ending_confirmed.connect(_on_command_bridge_ending_confirmed)
 	var tree_root := get_tree().root
+	var start_new_game := tree_root.has_meta(START_NEW_GAME_META)
+	if start_new_game:
+		tree_root.remove_meta(START_NEW_GAME_META)
 	var skip_save_restore := tree_root.has_meta(SKIP_SAVE_RESTORE_META)
 	if skip_save_restore:
 		tree_root.remove_meta(SKIP_SAVE_RESTORE_META)
@@ -114,9 +125,19 @@ func _ready() -> void:
 	if _is_ending:
 		player.set_physics_process(false)
 		hud.show_ending(_ending_id)
+	if start_new_game:
+		_is_title_screen = false
+		title_screen.visible = false
+		hud.visible = true
+		player.set_physics_process(true)
+	else:
+		_show_title_screen()
 
 
 func _process(delta: float) -> void:
+	if _is_title_screen:
+		return
+
 	_sync_world_view(delta)
 	_update_power_console_proximity()
 	if not _opening_instruction_dismissed and player.global_position.x >= -80.0:
@@ -157,7 +178,7 @@ func _sync_world_view(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _is_game_over or _is_ending:
+	if _is_title_screen or _is_game_over or _is_ending:
 		get_viewport().set_input_as_handled()
 		return
 
@@ -482,6 +503,26 @@ func _on_command_bridge_ending_confirmed(ending_id: String) -> void:
 	hud.show_ending(_ending_id)
 
 
+func _on_continue_requested() -> void:
+	if not _is_title_screen:
+		return
+
+	_is_title_screen = false
+	title_screen.visible = false
+	hud.visible = true
+	player.set_physics_process(not _is_game_over and not _is_ending)
+	if _is_ending:
+		hud.show_ending(_ending_id)
+
+
+func _show_title_screen() -> void:
+	_is_title_screen = true
+	player.set_physics_process(false)
+	hud.visible = false
+	title_screen.refresh_continue_availability()
+	title_screen.visible = true
+
+
 func _all_final_investigation_prerequisites_met() -> bool:
 	var completed_ids := objective_system.get_completed_objective_ids()
 	for required_id: String in [
@@ -529,13 +570,25 @@ func _restart_game() -> void:
 	if not _is_game_over and not _is_ending:
 		return
 
+	_start_new_game()
+
+
+func _start_new_game() -> void:
+	if _is_starting_new_game:
+		return
+	_is_starting_new_game = true
+
 	if not save_game_system.clear_save():
+		_is_starting_new_game = false
 		return
 	var tree_root := get_tree().root
 	tree_root.set_meta(SKIP_SAVE_RESTORE_META, true)
+	tree_root.set_meta(START_NEW_GAME_META, true)
 	var reload_error := get_tree().reload_current_scene()
 	if reload_error != OK:
 		tree_root.remove_meta(SKIP_SAVE_RESTORE_META)
+		tree_root.remove_meta(START_NEW_GAME_META)
+		_is_starting_new_game = false
 		push_error("Main: Could not restart the game (error %d)." % reload_error)
 
 

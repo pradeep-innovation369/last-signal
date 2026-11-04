@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=3]
+[gd_scene load_steps=21 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/world/PowerConsole.tscn" id="2_console"]
@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://scenes/world/SecurityConsole.tscn" id="18_security"]
 [ext_resource type="PackedScene" path="res://scenes/world/CrewDataLogTerminal.tscn" id="19_log_terminal"]
 [ext_resource type="PackedScene" path="res://scenes/world/CommandBridgeTerminal.tscn" id="20_command_bridge"]
+[ext_resource type="PackedScene" path="res://scenes/ui/TitleScreen.tscn" id="21_title_screen"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cryo_divider"]
 size = Vector2(16, 72)
@@ -181,3 +182,5 @@ interaction_message = "engineering_failure"
 position = Vector2(-208, 0)
 
 [node name="HUD" parent="." instance=ExtResource("3_hud")]
+
+[node name="TitleScreen" parent="." instance=ExtResource("21_title_screen")]
