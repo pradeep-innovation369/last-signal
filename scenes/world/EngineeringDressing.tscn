@@ -1,0 +1,76 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/art/environment/ship_props.svg" id="1_props"]
+
+[node name="EngineeringDressing" type="Node2D"]
+
+[node name="UpperMachineryPanel" type="Polygon2D" parent="."]
+color = Color(0.08, 0.12, 0.13, 1)
+polygon = PackedVector2Array(192, -92, 448, -92, 448, -88, 192, -88)
+
+[node name="LowerMachineryPanel" type="Polygon2D" parent="."]
+color = Color(0.08, 0.12, 0.13, 1)
+polygon = PackedVector2Array(192, 88, 448, 88, 448, 92, 192, 92)
+
+[node name="FloorSeamOne" type="Polygon2D" parent="."]
+color = Color(0.025, 0.045, 0.055, 1)
+polygon = PackedVector2Array(200, -80, 204, -80, 204, 80, 200, 80)
+
+[node name="FloorSeamTwo" type="Polygon2D" parent="."]
+color = Color(0.025, 0.045, 0.055, 1)
+polygon = PackedVector2Array(448, -80, 452, -80, 452, 80, 448, 80)
+
+[node name="UpperCableTray" type="Polygon2D" parent="."]
+color = Color(0.18, 0.27, 0.29, 1)
+polygon = PackedVector2Array(184, -104, 456, -104, 456, -100, 184, -100)
+
+[node name="CableTrayHighlight" type="Polygon2D" parent="."]
+color = Color(0.32, 0.45, 0.43, 1)
+polygon = PackedVector2Array(184, -104, 456, -104, 456, -102, 184, -102)
+
+[node name="LowerCableTray" type="Polygon2D" parent="."]
+color = Color(0.18, 0.27, 0.29, 1)
+polygon = PackedVector2Array(184, 100, 456, 100, 456, 104, 184, 104)
+
+[node name="NorthVent" type="Sprite2D" parent="."]
+position = Vector2(208, -84)
+texture = ExtResource("1_props")
+region_enabled = true
+region_rect = Rect2(0, 0, 16, 16)
+
+[node name="SouthVent" type="Sprite2D" parent="."]
+position = Vector2(208, 84)
+texture = ExtResource("1_props")
+region_enabled = true
+region_rect = Rect2(16, 0, 16, 16)
+
+[node name="EquipmentPanel" type="Sprite2D" parent="."]
+position = Vector2(232, -72)
+texture = ExtResource("1_props")
+region_enabled = true
+region_rect = Rect2(96, 0, 16, 16)
+scale = Vector2(2, 2)
+
+[node name="CyanMachineDisplay" type="Sprite2D" parent="."]
+position = Vector2(440, 32)
+texture = ExtResource("1_props")
+region_enabled = true
+region_rect = Rect2(80, 0, 16, 16)
+
+[node name="AmberWarning" type="Sprite2D" parent="."]
+position = Vector2(424, -80)
+texture = ExtResource("1_props")
+region_enabled = true
+region_rect = Rect2(48, 0, 16, 16)
+
+[node name="RedEmergency" type="Sprite2D" parent="."]
+position = Vector2(456, 80)
+texture = ExtResource("1_props")
+region_enabled = true
+region_rect = Rect2(64, 0, 16, 16)
+
+[node name="PipeElbow" type="Sprite2D" parent="."]
+position = Vector2(184, -100)
+texture = ExtResource("1_props")
+region_enabled = true
+region_rect = Rect2(32, 0, 16, 16)

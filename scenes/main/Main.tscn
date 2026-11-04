@@ -1,10 +1,13 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/world/PowerConsole.tscn" id="2_console"]
 [ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="3_hud"]
 [ext_resource type="Script" path="res://scripts/main/Main.gd" id="4_main"]
 [ext_resource type="Script" path="res://scripts/world/LocationArea.gd" id="5_location"]
+[ext_resource type="PackedScene" path="res://scenes/world/CryoDressing.tscn" id="6_cryo_dressing"]
+[ext_resource type="PackedScene" path="res://scenes/world/CorridorDressing.tscn" id="7_corridor_dressing"]
+[ext_resource type="PackedScene" path="res://scenes/world/EngineeringDressing.tscn" id="8_engineering_dressing"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_outer_horizontal"]
 size = Vector2(800, 16)
@@ -100,6 +103,12 @@ polygon = PackedVector2Array(-32, -12, 32, -12, 32, 12, -32, 12)
 position = Vector2(408, -58)
 color = Color(0.2, 0.46, 0.48, 1)
 polygon = PackedVector2Array(-20, -5, 20, -5, 20, 5, -20, 5)
+
+[node name="CryoDressing" parent="." instance=ExtResource("6_cryo_dressing")]
+
+[node name="CorridorDressing" parent="." instance=ExtResource("7_corridor_dressing")]
+
+[node name="EngineeringDressing" parent="." instance=ExtResource("8_engineering_dressing")]
 
 [node name="Walls" type="StaticBody2D" parent="."]
 collision_layer = 1
