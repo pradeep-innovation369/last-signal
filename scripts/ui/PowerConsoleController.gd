@@ -131,6 +131,14 @@ func _build_power_summary(parent: VBoxContainer) -> void:
 	summary.add_child(_available_summary)
 
 
+func _make_summary_label(label_text: String, text_color: Color) -> Label:
+	var label := Label.new()
+	label.text = label_text
+	label.add_theme_color_override("font_color", text_color)
+	label.add_theme_font_size_override("font_size", 8)
+	return label
+
+
 func _build_system_rows(parent: VBoxContainer) -> void:
 	for system_name: String in PowerManagement.SYSTEM_NAMES:
 		var row := HBoxContainer.new()
