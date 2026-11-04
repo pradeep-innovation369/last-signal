@@ -1,0 +1,77 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="1_player"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_horizontal_wall"]
+size = Vector2(656, 16)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_vertical_wall"]
+size = Vector2(16, 360)
+
+[node name="Main" type="Node2D"]
+
+[node name="Floor" type="Polygon2D" parent="."]
+color = Color(0.055, 0.075, 0.09, 1)
+polygon = PackedVector2Array(-320, -180, 320, -180, 320, 180, -320, 180)
+
+[node name="FloorPanels" type="Node2D" parent="."]
+
+[node name="PanelNorth" type="Polygon2D" parent="FloorPanels"]
+color = Color(0.075, 0.105, 0.12, 1)
+polygon = PackedVector2Array(-128, -112, 128, -112, 128, -104, -128, -104)
+
+[node name="PanelSouth" type="Polygon2D" parent="FloorPanels"]
+color = Color(0.075, 0.105, 0.12, 1)
+polygon = PackedVector2Array(-128, 104, 128, 104, 128, 112, -128, 112)
+
+[node name="PanelWest" type="Polygon2D" parent="FloorPanels"]
+color = Color(0.075, 0.105, 0.12, 1)
+polygon = PackedVector2Array(-128, -104, -120, -104, -120, 104, -128, 104)
+
+[node name="PanelEast" type="Polygon2D" parent="FloorPanels"]
+color = Color(0.075, 0.105, 0.12, 1)
+polygon = PackedVector2Array(120, -104, 128, -104, 128, 104, 120, 104)
+
+[node name="Walls" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 1
+
+[node name="NorthCollision" type="CollisionShape2D" parent="Walls"]
+position = Vector2(0, -184)
+shape = SubResource("RectangleShape2D_horizontal_wall")
+
+[node name="SouthCollision" type="CollisionShape2D" parent="Walls"]
+position = Vector2(0, 184)
+shape = SubResource("RectangleShape2D_horizontal_wall")
+
+[node name="WestCollision" type="CollisionShape2D" parent="Walls"]
+position = Vector2(-324, 0)
+shape = SubResource("RectangleShape2D_vertical_wall")
+
+[node name="EastCollision" type="CollisionShape2D" parent="Walls"]
+position = Vector2(324, 0)
+shape = SubResource("RectangleShape2D_vertical_wall")
+
+[node name="BoundaryVisuals" type="Node2D" parent="."]
+
+[node name="NorthWall" type="Polygon2D" parent="BoundaryVisuals"]
+position = Vector2(0, -184)
+color = Color(0.14, 0.22, 0.25, 1)
+polygon = PackedVector2Array(-328, -8, 328, -8, 328, 8, -328, 8)
+
+[node name="SouthWall" type="Polygon2D" parent="BoundaryVisuals"]
+position = Vector2(0, 184)
+color = Color(0.14, 0.22, 0.25, 1)
+polygon = PackedVector2Array(-328, -8, 328, -8, 328, 8, -328, 8)
+
+[node name="WestWall" type="Polygon2D" parent="BoundaryVisuals"]
+position = Vector2(-324, 0)
+color = Color(0.14, 0.22, 0.25, 1)
+polygon = PackedVector2Array(-8, -180, 8, -180, 8, 180, -8, 180)
+
+[node name="EastWall" type="Polygon2D" parent="BoundaryVisuals"]
+position = Vector2(324, 0)
+color = Color(0.14, 0.22, 0.25, 1)
+polygon = PackedVector2Array(-8, -180, 8, -180, 8, 180, -8, 180)
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
