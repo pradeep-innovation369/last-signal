@@ -5,6 +5,7 @@ signal power_console_closed
 signal crew_data_log_opened
 signal save_game_requested
 signal restart_requested
+signal communications_transmission_discovered
 
 @onready var interaction_hint: Label = $Root/InteractionHint
 @onready var message_frame: ColorRect = $Root/MessageFrame
@@ -37,6 +38,9 @@ var _objective_system: ObjectiveSystem
 func _ready() -> void:
 	power_console.closed.connect(_on_power_console_closed)
 	communications_console.closed.connect(_on_power_console_closed)
+	communications_console.transmission_discovered.connect(
+		_on_communications_transmission_discovered
+	)
 	navigation_console.closed.connect(_on_power_console_closed)
 	security_console.closed.connect(_on_power_console_closed)
 	crew_data_log_panel.closed.connect(_on_power_console_closed)
@@ -165,8 +169,11 @@ func close_power_console() -> void:
 	power_console.close()
 
 
-func open_communications_console(power_management: PowerManagement) -> void:
-	communications_console.open(power_management)
+func open_communications_console(
+	power_management: PowerManagement,
+	transmission_discovered: bool
+) -> void:
+	communications_console.open(power_management, transmission_discovered)
 
 
 func close_communications_console() -> void:
@@ -248,6 +255,10 @@ func _on_log_archive_button_pressed() -> void:
 
 func _on_save_game_button_pressed() -> void:
 	save_game_requested.emit()
+
+
+func _on_communications_transmission_discovered() -> void:
+	communications_transmission_discovered.emit()
 
 
 func _on_restart_button_pressed() -> void:

@@ -34,6 +34,7 @@ var _pending_console_objective_id: String = ""
 var _opening_instruction_dismissed: bool = false
 var _is_game_over: bool = false
 var _is_restoring_saved_game: bool = false
+var _communications_transmission_discovered: bool = false
 
 
 func _ready() -> void:
@@ -48,6 +49,9 @@ func _ready() -> void:
 	crew_data_log_system.log_discovered.connect(_on_crew_log_discovered)
 	life_support.oxygen_changed.connect(_on_oxygen_changed)
 	hud.restart_requested.connect(_restart_game)
+	hud.communications_transmission_discovered.connect(
+		_on_communications_transmission_discovered
+	)
 	var tree_root := get_tree().root
 	var skip_save_restore := tree_root.has_meta(SKIP_SAVE_RESTORE_META)
 	if skip_save_restore:
@@ -222,7 +226,10 @@ func _on_communications_console_interaction_requested(_message: String) -> void:
 		"investigate_communications",
 		power_management.get_system_allocated_power(PowerManagement.COMMUNICATIONS) >= 20
 	)
-	hud.open_communications_console(power_management)
+	hud.open_communications_console(
+		power_management,
+		_communications_transmission_discovered
+	)
 	player.set_physics_process(false)
 
 
@@ -282,6 +289,9 @@ func _restore_saved_game() -> void:
 	var saved_oxygen: float = saved_state["oxygen"]
 	var saved_log_ids: Array = saved_state["discovered_log_ids"]
 	_opening_instruction_dismissed = saved_state["opening_tutorial_dismissed"]
+	_communications_transmission_discovered = (
+		saved_state["communications_transmission_discovered"]
+	)
 	player.global_position = saved_position
 	for system_name: String in PowerManagement.SYSTEM_NAMES:
 		if not power_management.set_system_allocation(system_name, 0):
@@ -338,7 +348,8 @@ func _on_save_game_requested() -> void:
 		power_management,
 		crew_data_log_system,
 		objective_system,
-		_opening_instruction_dismissed
+		_opening_instruction_dismissed,
+		_communications_transmission_discovered
 	)
 	hud.show_save_result(save_succeeded)
 
@@ -347,11 +358,27 @@ func _on_power_allocation_changed(system_name: String, _previous: int, new_alloc
 	if _is_restoring_saved_game:
 		return
 	if (
+		system_name == PowerManagement.COMMUNICATIONS
+		and new_allocation >= 20
+		and hud.communications_console.visible
+		and objective_system.get_current_objective_id() == "investigate_communications"
+	):
+		_pending_console_objective_id = "investigate_communications"
+	if (
 		system_name == PowerManagement.LIFE_SUPPORT
 		and new_allocation >= LifeSupport.MINIMUM_STABLE_ALLOCATION
 		and objective_system.get_current_objective_id() == "restore_life_support"
 	):
 		objective_system.complete_current_objective("restore_life_support")
+
+
+func _on_communications_transmission_discovered() -> void:
+	_communications_transmission_discovered = true
+	if (
+		not _is_game_over
+		and objective_system.get_current_objective_id() == "investigate_communications"
+	):
+		_pending_console_objective_id = "investigate_communications"
 
 
 func _on_oxygen_changed(oxygen_level: float) -> void:

@@ -2,15 +2,18 @@ extends Control
 class_name CommunicationsConsoleController
 
 signal closed
+signal transmission_discovered
 
 const REQUIRED_ALLOCATION: int = 20
 const PANEL_SIZE := Vector2(272.0, 128.0)
 const VIEWPORT_MARGIN: float = 8.0
 const SYSTEM_NAME: String = "Communications"
+const SHIP_RECORDED_TIME: String = "2187-04-19 03:14:00"
+const TRANSMISSION_TIMESTAMP: String = "2187-04-19 07:46:00"
 const INCOMING_TRANSMISSION: String = (
-	"...if this reaches anyone aboard, do not answer the signal. "
-	+ "It has been repeating our names from outside the hull. "
-	+ "We are below the ship now. We can hear the doors opening."
+	"Do not open the lower access hatch when the cryo bay cycles. "
+	+ "There is someone knocking from the other side. "
+	+ "We have not opened it. We can hear ourselves asking."
 )
 const BACKDROP := Color(0.004, 0.010, 0.018, 0.84)
 const PANEL := Color(0.025, 0.043, 0.060, 1.0)
@@ -25,6 +28,7 @@ var _allocation_label: Label
 var _message_label: Label
 var _state_label: Label
 var _panel: PanelContainer
+var _transmission_discovered: bool = false
 
 
 func _ready() -> void:
@@ -32,8 +36,9 @@ func _ready() -> void:
 	visible = false
 
 
-func open(power_management: PowerManagement) -> void:
+func open(power_management: PowerManagement, transmission_discovered_before: bool) -> void:
 	_power_management = power_management
+	_transmission_discovered = transmission_discovered_before
 	if not _power_management.allocation_changed.is_connected(_on_allocation_changed):
 		_power_management.allocation_changed.connect(_on_allocation_changed)
 	_refresh_message()
@@ -195,9 +200,23 @@ func _refresh_message() -> void:
 	var allocation := _power_management.get_system_allocated_power(SYSTEM_NAME)
 	_allocation_label.text = "%d / %d UNITS" % [allocation, REQUIRED_ALLOCATION]
 	if allocation >= REQUIRED_ALLOCATION:
-		_state_label.text = "SIGNAL LOCK ACQUIRED"
+		var first_access := not _transmission_discovered
+		_transmission_discovered = true
+		if first_access:
+			transmission_discovered.emit()
+			_state_label.text = "TRANSMISSION RECORDED"
+		else:
+			_state_label.text = "SIGNAL LOCK ACQUIRED"
 		_state_label.add_theme_color_override("font_color", ACCENT)
-		_message_label.text = "INCOMING TRANSMISSION\n\n" + INCOMING_TRANSMISSION
+		_message_label.text = (
+			"INCOMING DISTRESS TRANSMISSION\n\n"
+			+ "SHIP RECORDED TIME: "
+			+ SHIP_RECORDED_TIME
+			+ "\nSENDER: AURORA-09\nRECIPIENT: AURORA-09\nTIMESTAMP: "
+			+ TRANSMISSION_TIMESTAMP
+			+ "\n\n"
+			+ INCOMING_TRANSMISSION
+		)
 	else:
 		_state_label.text = "RELAY POWER INSUFFICIENT"
 		_state_label.add_theme_color_override("font_color", WARNING)
