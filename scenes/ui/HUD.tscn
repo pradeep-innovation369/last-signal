@@ -90,6 +90,18 @@ grow_horizontal = 0
 theme_override_font_sizes/font_size = 8
 text = "LOGS"
 
+[node name="SaveGameButton" type="Button" parent="Root"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -112.0
+offset_top = 4.0
+offset_right = -58.0
+offset_bottom = 18.0
+grow_horizontal = 0
+theme_override_font_sizes/font_size = 7
+text = "SAVE GAME"
+
 [node name="MessageFrame" type="ColorRect" parent="Root"]
 visible = false
 offset_left = 29.0

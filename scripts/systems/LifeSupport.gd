@@ -19,6 +19,15 @@ func get_oxygen_level() -> float:
 	return _oxygen_level
 
 
+func restore_oxygen_level(oxygen_level: float) -> void:
+	var restored_level := clampf(oxygen_level, 0.0, 100.0)
+	if is_equal_approx(restored_level, _oxygen_level):
+		return
+
+	_oxygen_level = restored_level
+	oxygen_changed.emit(_oxygen_level)
+
+
 func update(delta: float) -> void:
 	if delta <= 0.0:
 		return

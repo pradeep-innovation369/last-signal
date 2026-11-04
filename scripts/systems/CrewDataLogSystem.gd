@@ -77,3 +77,13 @@ func get_discovered_logs() -> Array[Dictionary]:
 	for log_id: String in _discovered_log_ids:
 		discovered_logs.append(LOG_ENTRIES[log_id].duplicate(true))
 	return discovered_logs
+
+
+func get_discovered_log_ids() -> Array[String]:
+	return _discovered_log_ids.duplicate()
+
+
+func restore_discovered_logs(log_ids: Array) -> void:
+	for log_id: Variant in log_ids:
+		if typeof(log_id) == TYPE_STRING and has_log(log_id):
+			discover_log(log_id)

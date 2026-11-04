@@ -20,6 +20,7 @@ const SECURITY_CONSOLE_INTERACTION_DISTANCE: float = 32.0
 var power_management: PowerManagement = PowerManagement.new()
 var life_support: LifeSupport
 var crew_data_log_system: CrewDataLogSystem = CrewDataLogSystem.new()
+var save_game_system: SaveGameSystem = SaveGameSystem.new()
 var nearby_interactable: Interactable
 var current_location: String = ""
 
@@ -30,9 +31,11 @@ func _ready() -> void:
 	_sync_world_view(0.0)
 	hud.set_life_support(life_support, power_management)
 	hud.set_crew_data_log_system(crew_data_log_system)
+	_restore_saved_game()
 	hud.set_player_position(player.global_position)
 	hud.power_console_closed.connect(_on_power_console_closed)
 	hud.crew_data_log_opened.connect(_on_crew_data_log_opened)
+	hud.save_game_requested.connect(_on_save_game_requested)
 	power_console.player_entered.connect(_on_interactable_entered)
 	power_console.player_exited.connect(_on_interactable_exited)
 	power_console.interaction_requested.connect(_on_power_console_interaction_requested)
@@ -171,6 +174,42 @@ func _on_crew_data_log_interaction_requested(log_id: String) -> void:
 
 func _on_crew_data_log_opened() -> void:
 	player.set_physics_process(false)
+
+
+func _restore_saved_game() -> void:
+	var saved_state := save_game_system.load_game(crew_data_log_system)
+	if saved_state.is_empty():
+		return
+
+	var saved_position: Vector2 = saved_state["player_position"]
+	var saved_allocations: Dictionary = saved_state["power_allocations"]
+	var saved_oxygen: float = saved_state["oxygen"]
+	var saved_log_ids: Array = saved_state["discovered_log_ids"]
+	player.global_position = saved_position
+	for system_name: String in PowerManagement.SYSTEM_NAMES:
+		if not power_management.set_system_allocation(system_name, 0):
+			push_error("Main: Could not prepare power allocations for save restoration.")
+			return
+	for system_name: String in PowerManagement.SYSTEM_NAMES:
+		if not power_management.set_system_allocation(
+			system_name,
+			saved_allocations[system_name]
+		):
+			push_error("Main: Could not restore '%s' power allocation." % system_name)
+			return
+
+	life_support.restore_oxygen_level(saved_oxygen)
+	crew_data_log_system.restore_discovered_logs(saved_log_ids)
+
+
+func _on_save_game_requested() -> void:
+	var save_succeeded := save_game_system.save_game(
+		player.global_position,
+		life_support,
+		power_management,
+		crew_data_log_system
+	)
+	hud.show_save_result(save_succeeded)
 
 
 func _on_power_console_closed() -> void:

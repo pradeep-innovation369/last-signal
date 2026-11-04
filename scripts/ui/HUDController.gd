@@ -3,6 +3,7 @@ class_name HUDController
 
 signal power_console_closed
 signal crew_data_log_opened
+signal save_game_requested
 
 @onready var interaction_hint: Label = $Root/InteractionHint
 @onready var message_frame: ColorRect = $Root/MessageFrame
@@ -14,6 +15,7 @@ signal crew_data_log_opened
 @onready var security_console: SecurityConsoleController = $SecurityConsolePanel
 @onready var crew_data_log_panel: CrewDataLogController = $CrewDataLogPanel
 @onready var log_archive_button: Button = $Root/LogArchiveButton
+@onready var save_game_button: Button = $Root/SaveGameButton
 @onready var oxygen_value: Label = $Root/OxygenValue
 @onready var oxygen_bar: ProgressBar = $Root/OxygenBar
 @onready var ship_minimap: ShipMinimap = $Root/ShipMinimap
@@ -31,6 +33,7 @@ func _ready() -> void:
 	crew_data_log_panel.closed.connect(_on_power_console_closed)
 	crew_data_log_panel.opened.connect(_on_crew_data_log_panel_opened)
 	log_archive_button.pressed.connect(_on_log_archive_button_pressed)
+	save_game_button.pressed.connect(_on_save_game_button_pressed)
 	log_archive_button.add_theme_color_override("font_color", Color(0.84, 0.91, 0.92, 1.0))
 	log_archive_button.add_theme_font_size_override("font_size", 8)
 	log_archive_button.add_theme_stylebox_override(
@@ -40,6 +43,20 @@ func _ready() -> void:
 	log_archive_button.add_theme_stylebox_override(
 		"hover",
 		_make_button_style(Color(0.075, 0.14, 0.16, 1.0))
+	)
+	save_game_button.add_theme_color_override("font_color", Color(0.84, 0.91, 0.92, 1.0))
+	save_game_button.add_theme_font_size_override("font_size", 7)
+	save_game_button.add_theme_stylebox_override(
+		"normal",
+		_make_button_style(Color(0.025, 0.043, 0.060, 0.95))
+	)
+	save_game_button.add_theme_stylebox_override(
+		"hover",
+		_make_button_style(Color(0.075, 0.14, 0.16, 1.0))
+	)
+	save_game_button.add_theme_stylebox_override(
+		"pressed",
+		_make_button_style(Color(0.055, 0.10, 0.12, 1.0))
 	)
 	oxygen_bar.max_value = 100.0
 	oxygen_bar.add_theme_stylebox_override("background", _make_oxygen_style(Color(0.07, 0.13, 0.16, 1.0)))
@@ -128,6 +145,14 @@ func close_crew_data_log() -> void:
 	crew_data_log_panel.close()
 
 
+func show_save_result(succeeded: bool) -> void:
+	var result_message := "GAME SAVED" if succeeded else "SAVE FAILED"
+	show_message(result_message)
+	await get_tree().create_timer(2.0).timeout
+	if message_label.text == result_message:
+		clear_message()
+
+
 func is_power_console_open() -> bool:
 	return power_console.visible
 
@@ -161,6 +186,10 @@ func _on_log_archive_button_pressed() -> void:
 		return
 
 	open_crew_data_log_archive(_crew_data_log_system)
+
+
+func _on_save_game_button_pressed() -> void:
+	save_game_requested.emit()
 
 
 func _on_crew_data_log_panel_opened() -> void:
