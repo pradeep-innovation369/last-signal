@@ -1,5 +1,7 @@
 extends Node2D
 
+const POWER_CONSOLE_INTERACTION_DISTANCE: float = 32.0
+
 @onready var power_console: Interactable = $WorldVisuals/DepthSort/PowerConsole
 @onready var hud: HUDController = $HUD
 @onready var player: PlayerController = $WorldVisuals/DepthSort/Player
@@ -27,6 +29,16 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_sync_world_view(delta)
+	_update_power_console_proximity()
+
+
+func _update_power_console_proximity() -> void:
+	var distance_to_console := player.global_position.distance_to(power_console.global_position)
+	if distance_to_console <= POWER_CONSOLE_INTERACTION_DISTANCE:
+		if not is_instance_valid(nearby_interactable):
+			_on_interactable_entered(power_console)
+	elif nearby_interactable == power_console:
+		_on_interactable_exited(power_console)
 
 
 func _sync_world_view(delta: float) -> void:
@@ -59,6 +71,10 @@ func _on_interactable_entered(interactable: Interactable) -> void:
 func _on_interactable_exited(interactable: Interactable) -> void:
 	if nearby_interactable != interactable:
 		return
+	if interactable == power_console:
+		var distance_to_console := player.global_position.distance_to(power_console.global_position)
+		if distance_to_console <= POWER_CONSOLE_INTERACTION_DISTANCE:
+			return
 
 	hud.close_power_console()
 	nearby_interactable = null
@@ -75,7 +91,7 @@ func _on_location_entered(location_name: String) -> void:
 
 func _get_location_guidance() -> String:
 	if current_location == "Engineering Room":
-		return "Power Console: near the center of Engineering"
+		return "Go right into Engineering; find the cyan-screen console"
 	return ""
 
 
