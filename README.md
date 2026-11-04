@@ -29,5 +29,7 @@ discovered logs and mission objectives locally; a valid save can be restored wit
 through the ship.
 The HUD shows your current location, objective, and interaction hint. The game uses
 a 320x180 logical viewport upscaled with integer scaling to a resizable 1280x720
-window. The connected rooms sit inside a 3D spacecraft hull, and the orange 3D
-astronaut follows the existing 2D movement and collision system.
+window. UI text is rendered with canvas-item scaling to keep it sharp, while nearest
+texture filtering preserves the pixel-art look. The connected rooms sit inside a 3D
+spacecraft hull, and the orange 3D astronaut follows the existing 2D movement and
+collision system.
