@@ -11,11 +11,13 @@ const POWER_CONSOLE_INTERACTION_DISTANCE: float = 32.0
 @onready var world_texture: Sprite2D = $WorldRenderLayer/WorldTexture
 
 var power_management: PowerManagement = PowerManagement.new()
+var life_support: LifeSupport
 var nearby_interactable: Interactable
 var current_location: String = ""
 
 
 func _ready() -> void:
+	life_support = LifeSupport.new(power_management)
 	world_texture.texture = render_viewport.get_texture()
 	_sync_world_view(0.0)
 	hud.power_console_closed.connect(_on_power_console_closed)
@@ -30,6 +32,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_sync_world_view(delta)
 	_update_power_console_proximity()
+	life_support.update(delta)
 
 
 func _update_power_console_proximity() -> void:
