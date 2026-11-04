@@ -11,6 +11,9 @@ extends Node2D
 var power_management: PowerManagement = PowerManagement.new()
 var nearby_interactable: Interactable
 
+# TEMP DEBUG: remove this timer and the marked _process block after testing.
+var _power_console_debug_elapsed: float = 0.0
+
 
 func _ready() -> void:
 	world_texture.texture = render_viewport.get_texture()
@@ -26,6 +29,19 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_sync_world_view(delta)
+
+	# TEMP DEBUG: remove this block after testing.
+	_power_console_debug_elapsed += delta
+	if _power_console_debug_elapsed >= 1.0:
+		_power_console_debug_elapsed = 0.0
+		print(
+			"PowerConsole debug | player=%s distance=%.1f nearby=%s"
+			% [
+				player.global_position,
+				player.global_position.distance_to(power_console.global_position),
+				is_instance_valid(nearby_interactable),
+			]
+		)
 
 
 func _sync_world_view(delta: float) -> void:
