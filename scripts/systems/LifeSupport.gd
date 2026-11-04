@@ -4,7 +4,7 @@ class_name LifeSupport
 signal oxygen_changed(new_oxygen_level: float)
 
 const MINIMUM_STABLE_ALLOCATION: int = 35
-const OXYGEN_DEPLETION_RATE: float = 1.0
+const OXYGEN_DEPLETION_RATE: float = 0.1
 const LIFE_SUPPORT_SYSTEM_NAME: String = "Life Support"
 
 var _power_management: PowerManagement

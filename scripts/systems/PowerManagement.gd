@@ -19,7 +19,7 @@ const SYSTEM_NAMES: Array[String] = [
 ]
 
 const INITIAL_ALLOCATIONS: Dictionary = {
-	"Life Support": 35,
+	"Life Support": 25,
 	"Navigation": 25,
 	"Security": 20,
 	"Communications": 20,

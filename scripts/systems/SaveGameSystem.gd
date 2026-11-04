@@ -149,7 +149,15 @@ func _validate_objective_state(
 			if not known_completed_ids.has(objective_id):
 				known_completed_ids.append(objective_id)
 
+	var schema_version_variant: Variant = state.get("schema_version", 1)
+	var schema_version: int = 1
+	if typeof(schema_version_variant) == TYPE_INT and schema_version_variant >= 1:
+		schema_version = schema_version_variant
+	else:
+		push_warning("SaveGameSystem: Objective schema version was invalid; using legacy migration.")
+
 	return {
+		"schema_version": schema_version,
 		"current_id": current_id,
 		"completed_ids": known_completed_ids,
 	}

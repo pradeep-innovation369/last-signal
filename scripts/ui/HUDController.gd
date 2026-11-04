@@ -259,7 +259,10 @@ func _on_objective_changed(_objective_id: String, title: String, description: St
 
 
 func _on_objective_completed(title: String, next_title: String) -> void:
-	show_message("OBJECTIVE COMPLETE: %s\nNEXT: %s" % [title, next_title])
+	if title == "Restore Life Support":
+		show_message("LIFE SUPPORT STABILIZED\nNEXT: %s" % next_title)
+	else:
+		show_message("OBJECTIVE COMPLETE: %s\nNEXT: %s" % [title, next_title])
 	var completion_message := message_label.text
 	await get_tree().create_timer(3.0).timeout
 	if message_label.text == completion_message:
@@ -267,7 +270,7 @@ func _on_objective_completed(title: String, next_title: String) -> void:
 
 
 func _update_objective_display(title: String, description: String) -> void:
-	objective_title.text = "OBJECTIVE  /  %s" % title.to_upper()
+	objective_title.text = "OBJECTIVE: %s" % title.to_upper()
 	objective_description.text = description
 
 

@@ -7,18 +7,18 @@ signal objective_completed(title: String, next_title: String)
 const OBJECTIVES: Array[Dictionary] = [
 	{
 		"id": "investigate_ship",
-		"title": "Reach Engineering",
-		"description": "Cross Main Corridor to Engineering. At the Power Console, Life Support needs 35 power to stabilize oxygen.",
+		"title": "Reach Main Corridor",
+		"description": "Leave the Cryo Chamber and enter the Main Corridor.",
 	},
 	{
-		"id": "inspect_power_console",
-		"title": "Inspect Power Console",
-		"description": "Review the Engineering console, then close it.",
+		"id": "reach_engineering",
+		"title": "Reach Engineering",
+		"description": "Cross the Main Corridor and locate the Power Console.",
 	},
 	{
 		"id": "restore_life_support",
 		"title": "Restore Life Support",
-		"description": "Allocate at least 35 power to Life Support to stabilize oxygen.",
+		"description": "At the Power Console, manually allocate at least 35 of 100 power units to Life Support.",
 	},
 	{
 		"id": "investigate_communications",
@@ -88,6 +88,7 @@ func complete_current_objective(objective_id: String) -> bool:
 
 func get_save_data() -> Dictionary:
 	return {
+		"schema_version": 3,
 		"current_id": get_current_objective_id(),
 		"completed_ids": get_completed_objective_ids(),
 	}
@@ -96,6 +97,10 @@ func get_save_data() -> Dictionary:
 func restore_state(state: Dictionary) -> void:
 	var completed_variant: Variant = state.get("completed_ids", [])
 	var current_variant: Variant = state.get("current_id", "")
+	var state_version_variant: Variant = state.get("schema_version", 1)
+	var state_version: int = 1
+	if typeof(state_version_variant) == TYPE_INT:
+		state_version = state_version_variant
 	if typeof(completed_variant) != TYPE_ARRAY:
 		push_warning("ObjectiveSystem: Invalid completed objective list; starting objectives anew.")
 		_reset_progress()
@@ -112,6 +117,9 @@ func restore_state(state: Dictionary) -> void:
 		if typeof(objective_id) == TYPE_STRING and is_known_objective_id(objective_id):
 			if not saved_completed_ids.has(objective_id):
 				saved_completed_ids.append(objective_id)
+
+	if state_version < 2 and saved_completed_ids.has("investigate_ship"):
+		saved_completed_ids.append("reach_engineering")
 
 	_completed_objective_ids.clear()
 	_current_objective_index = 0

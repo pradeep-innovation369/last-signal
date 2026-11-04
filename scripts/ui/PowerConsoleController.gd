@@ -265,6 +265,13 @@ func _refresh_display() -> void:
 		_bars[system_name].value = allocation
 		_allocation_labels[system_name].text = "%d UNITS" % allocation
 	_refreshing_display = false
+	if (
+		_power_management.get_system_allocated_power(PowerManagement.LIFE_SUPPORT)
+		>= LifeSupport.MINIMUM_STABLE_ALLOCATION
+	):
+		_set_status("LIFE SUPPORT STABILIZED", ACCENT)
+	else:
+		_set_status(_default_status, WARNING)
 
 
 func _on_slider_value_changed(value: float, system_name: String) -> void:

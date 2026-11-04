@@ -4,8 +4,12 @@ const POWER_CONSOLE_INTERACTION_DISTANCE: float = 32.0
 const COMMUNICATIONS_CONSOLE_INTERACTION_DISTANCE: float = 32.0
 const NAVIGATION_CONSOLE_INTERACTION_DISTANCE: float = 32.0
 const SECURITY_CONSOLE_INTERACTION_DISTANCE: float = 32.0
-const OPENING_OXYGEN_GRACE_SECONDS: float = 60.0
 const SKIP_SAVE_RESTORE_META: String = "last_signal_skip_save_restore_once"
+const OPENING_TUTORIAL_TEXT: String = (
+	"LIFE SUPPORT UNSTABLE\n"
+	+ "Oxygen levels are decreasing.\n"
+	+ "Restore power to Life Support to stabilize oxygen."
+)
 
 @onready var power_console: Interactable = $WorldVisuals/DepthSort/PowerConsole
 @onready var communications_console: Interactable = $WorldVisuals/DepthSort/CommunicationsConsole
@@ -28,8 +32,8 @@ var nearby_interactable: Interactable
 var current_location: String = ""
 var _pending_console_objective_id: String = ""
 var _opening_instruction_dismissed: bool = false
-var _opening_oxygen_grace_remaining: float = OPENING_OXYGEN_GRACE_SECONDS
 var _is_game_over: bool = false
+var _is_restoring_saved_game: bool = false
 
 
 func _ready() -> void:
@@ -80,6 +84,7 @@ func _ready() -> void:
 
 	for location: LocationArea in $Gameplay/Locations.get_children():
 		location.location_entered.connect(_on_location_entered)
+	_sync_objectives_with_player_position()
 
 
 func _process(delta: float) -> void:
@@ -88,13 +93,7 @@ func _process(delta: float) -> void:
 	if not _opening_instruction_dismissed and player.global_position.x >= -80.0:
 		_dismiss_opening_instruction()
 	if not _is_game_over:
-		if _opening_oxygen_grace_remaining > 0.0:
-			_opening_oxygen_grace_remaining = maxf(
-				0.0,
-				_opening_oxygen_grace_remaining - delta
-			)
-		else:
-			life_support.update(delta)
+		life_support.update(delta)
 	hud.set_player_position(player.global_position)
 
 
@@ -176,14 +175,15 @@ func _on_location_entered(location_name: String) -> void:
 	current_location = location_name
 	if location_name == "Main Corridor":
 		_dismiss_opening_instruction()
-	elif location_name == "Engineering Room":
 		objective_system.complete_current_objective("investigate_ship")
+	elif location_name == "Engineering Room":
+		objective_system.complete_current_objective("reach_engineering")
 	if not is_instance_valid(nearby_interactable):
 		hud.set_interaction_hint(_get_location_guidance())
 
 
 func _get_opening_instruction() -> String:
-	return "MOVE: WASD / ARROWS  -  REACH ENGINEERING VIA MAIN CORRIDOR"
+	return OPENING_TUTORIAL_TEXT
 
 
 func _dismiss_opening_instruction() -> void:
@@ -201,10 +201,16 @@ func _get_location_guidance() -> String:
 	return ""
 
 
+func _sync_objectives_with_player_position() -> void:
+	if player.global_position.x >= -80.0:
+		objective_system.complete_current_objective("investigate_ship")
+	if player.global_position.x >= 160.0:
+		objective_system.complete_current_objective("reach_engineering")
+
+
 func _on_power_console_interaction_requested(message: String) -> void:
 	if _is_game_over:
 		return
-	_begin_console_objective("inspect_power_console")
 	hud.open_power_console(power_management, message)
 	player.set_physics_process(false)
 
@@ -270,6 +276,7 @@ func _restore_saved_game() -> void:
 	if saved_state.is_empty():
 		return
 
+	_is_restoring_saved_game = true
 	var saved_position: Vector2 = saved_state["player_position"]
 	var saved_allocations: Dictionary = saved_state["power_allocations"]
 	var saved_oxygen: float = saved_state["oxygen"]
@@ -279,6 +286,7 @@ func _restore_saved_game() -> void:
 	for system_name: String in PowerManagement.SYSTEM_NAMES:
 		if not power_management.set_system_allocation(system_name, 0):
 			push_error("Main: Could not prepare power allocations for save restoration.")
+			_is_restoring_saved_game = false
 			return
 	for system_name: String in PowerManagement.SYSTEM_NAMES:
 		if not power_management.set_system_allocation(
@@ -286,13 +294,39 @@ func _restore_saved_game() -> void:
 			saved_allocations[system_name]
 		):
 			push_error("Main: Could not restore '%s' power allocation." % system_name)
+			_is_restoring_saved_game = false
 			return
 
 	life_support.restore_oxygen_level(saved_oxygen)
 	crew_data_log_system.restore_discovered_logs(saved_log_ids)
-	var objective_state: Dictionary = saved_state["objective_state"]
+	var objective_state := _migrate_objective_state(
+		saved_state["objective_state"],
+		saved_position
+	)
 	objective_system.restore_state(objective_state)
+	_is_restoring_saved_game = false
 	_check_current_objective_condition(objective_system.get_current_objective_id())
+
+
+func _migrate_objective_state(state: Dictionary, saved_position: Vector2) -> Dictionary:
+	var completed_ids_variant: Variant = state.get("completed_ids", [])
+	var completed_ids: Array = []
+	if typeof(completed_ids_variant) == TYPE_ARRAY:
+		completed_ids = completed_ids_variant.duplicate()
+
+	var schema_version: int = state.get("schema_version", 1)
+	if schema_version < 2 and completed_ids.has("investigate_ship"):
+		completed_ids.append("reach_engineering")
+	if saved_position.x >= -80.0 and not completed_ids.has("investigate_ship"):
+		completed_ids.append("investigate_ship")
+	if saved_position.x >= 160.0 and not completed_ids.has("reach_engineering"):
+		completed_ids.append("reach_engineering")
+
+	return {
+		"schema_version": 3,
+		"current_id": "",
+		"completed_ids": completed_ids,
+	}
 
 
 func _on_save_game_requested() -> void:
@@ -310,11 +344,8 @@ func _on_save_game_requested() -> void:
 
 
 func _on_power_allocation_changed(system_name: String, _previous: int, new_allocation: int) -> void:
-	if (
-		system_name == PowerManagement.LIFE_SUPPORT
-		and new_allocation >= LifeSupport.MINIMUM_STABLE_ALLOCATION
-	):
-		_opening_oxygen_grace_remaining = 0.0
+	if _is_restoring_saved_game:
+		return
 	if (
 		system_name == PowerManagement.LIFE_SUPPORT
 		and new_allocation >= LifeSupport.MINIMUM_STABLE_ALLOCATION
@@ -356,10 +387,14 @@ func _restart_game() -> void:
 
 
 func _on_crew_log_discovered(_log_id: String) -> void:
+	if _is_restoring_saved_game:
+		return
 	_check_current_objective_condition(objective_system.get_current_objective_id())
 
 
 func _on_current_objective_changed(objective_id: String, _title: String, _description: String) -> void:
+	if _is_restoring_saved_game:
+		return
 	_check_current_objective_condition(objective_id)
 
 
@@ -383,8 +418,6 @@ func _on_power_console_closed() -> void:
 	var completed_objective_id := _pending_console_objective_id
 	_pending_console_objective_id = ""
 	match completed_objective_id:
-		"inspect_power_console":
-			objective_system.complete_current_objective(completed_objective_id)
 		"investigate_communications":
 			if power_management.get_system_allocated_power(PowerManagement.COMMUNICATIONS) >= 20:
 				objective_system.complete_current_objective(completed_objective_id)
