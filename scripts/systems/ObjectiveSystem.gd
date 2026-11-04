@@ -28,12 +28,12 @@ const OBJECTIVES: Array[Dictionary] = [
 	{
 		"id": "investigate_navigation",
 		"title": "Investigate Navigation",
-		"description": "Review navigation, then close the console.",
+		"description": "Access the flight record, then close the Navigation Console.",
 	},
 	{
 		"id": "access_security",
 		"title": "Access Security Console",
-		"description": "Review Security status, then close the console.",
+		"description": "Access the incident record, then close the Security Console.",
 	},
 	{
 		"id": "review_crew_logs",

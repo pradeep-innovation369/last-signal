@@ -12,7 +12,9 @@ func save_game(
 	crew_data_log_system: CrewDataLogSystem,
 	objective_system: ObjectiveSystem,
 	opening_tutorial_dismissed: bool,
-	communications_transmission_discovered: bool
+	communications_transmission_discovered: bool,
+	navigation_flight_record_discovered: bool,
+	security_incident_record_discovered: bool
 ) -> bool:
 	var config := ConfigFile.new()
 	config.set_value("save", "version", SAVE_VERSION)
@@ -25,6 +27,16 @@ func save_game(
 		"save",
 		"communications_transmission_discovered",
 		communications_transmission_discovered
+	)
+	config.set_value(
+		"save",
+		"navigation_flight_record_discovered",
+		navigation_flight_record_discovered
+	)
+	config.set_value(
+		"save",
+		"security_incident_record_discovered",
+		security_incident_record_discovered
 	)
 	for system_name: String in PowerManagement.SYSTEM_NAMES:
 		config.set_value(
@@ -136,6 +148,15 @@ func load_game(
 			"SaveGameSystem: Communications discovery flag was malformed; using undiscovered state."
 		)
 
+	var navigation_discovered := _load_optional_discovery_flag(
+		config,
+		"navigation_flight_record_discovered"
+	)
+	var security_discovered := _load_optional_discovery_flag(
+		config,
+		"security_incident_record_discovered"
+	)
+
 	return {
 		"player_position": player_position,
 		"oxygen": clampf(float(oxygen), 0.0, 100.0),
@@ -144,7 +165,20 @@ func load_game(
 		"objective_state": objective_state,
 		"opening_tutorial_dismissed": tutorial_dismissed,
 		"communications_transmission_discovered": communications_discovered,
+		"navigation_flight_record_discovered": navigation_discovered,
+		"security_incident_record_discovered": security_discovered,
 	}
+
+
+func _load_optional_discovery_flag(config: ConfigFile, key: String) -> bool:
+	var value: Variant = config.get_value("save", key, false)
+	if typeof(value) == TYPE_BOOL:
+		return value
+	if config.has_section_key("save", key):
+		push_warning(
+			"SaveGameSystem: '%s' was malformed; using undiscovered state." % key
+		)
+	return false
 
 
 func _validate_objective_state(

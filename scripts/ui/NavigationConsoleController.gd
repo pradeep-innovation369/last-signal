@@ -2,11 +2,20 @@ extends Control
 class_name NavigationConsoleController
 
 signal closed
+signal flight_record_discovered
 
 const REQUIRED_ALLOCATION: int = 25
 const SYSTEM_NAME: String = PowerManagement.NAVIGATION
-const PANEL_SIZE := Vector2(272.0, 112.0)
+const PANEL_SIZE := Vector2(272.0, 144.0)
 const VIEWPORT_MARGIN: float = 8.0
+const FLIGHT_RECORD_TEXT: String = (
+	"FLIGHT RECORD\n"
+	+ "ROUTE CORRECTION TIME: 2187-04-19 07:31:08\n"
+	+ "DISTRESS SIGNAL RECEIVED: 2187-04-19 07:46:00\n"
+	+ "FILED DESTINATION: RA 18h 42m / DEC +07 deg 21 min\n"
+	+ "ROUTE CORRECTION: RA 18h 42m / DEC +07 deg 52 min\n"
+	+ "Recorder note: Correction accepted automatically. No crew authorization was logged."
+)
 const BACKDROP := Color(0.004, 0.010, 0.018, 0.84)
 const PANEL := Color(0.025, 0.043, 0.060, 1.0)
 const BORDER := Color(0.14, 0.25, 0.29, 1.0)
@@ -20,6 +29,9 @@ var _panel: PanelContainer
 var _system_label: Label
 var _solution_label: Label
 var _destination_label: Label
+var _flight_record_button: Button
+var _evidence_label: Label
+var _flight_record_discovered: bool = false
 
 
 func _ready() -> void:
@@ -27,8 +39,9 @@ func _ready() -> void:
 	visible = false
 
 
-func open(power_management: PowerManagement) -> void:
+func open(power_management: PowerManagement, flight_record_discovered_before: bool) -> void:
 	_power_management = power_management
+	_flight_record_discovered = flight_record_discovered_before
 	if not _power_management.allocation_changed.is_connected(_on_allocation_changed):
 		_power_management.allocation_changed.connect(_on_allocation_changed)
 	_refresh_status()
@@ -101,9 +114,40 @@ func _build_interface() -> void:
 	divider.color = BORDER
 	layout.add_child(divider)
 
-	_system_label = _make_status_label(layout)
-	_solution_label = _make_status_label(layout)
-	_destination_label = _make_status_label(layout)
+	var scroll_container := ScrollContainer.new()
+	scroll_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	layout.add_child(scroll_container)
+
+	var scroll_content := VBoxContainer.new()
+	scroll_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll_content.size_flags_vertical = Control.SIZE_FILL
+	scroll_content.add_theme_constant_override("separation", 5)
+	scroll_container.add_child(scroll_content)
+
+	_system_label = _make_status_label(scroll_content)
+	_solution_label = _make_status_label(scroll_content)
+	_destination_label = _make_status_label(scroll_content)
+	_flight_record_button = Button.new()
+	_flight_record_button.custom_minimum_size.y = 18.0
+	_flight_record_button.add_theme_color_override("font_color", PRIMARY_TEXT)
+	_flight_record_button.add_theme_font_size_override("font_size", 8)
+	_flight_record_button.add_theme_stylebox_override(
+		"normal",
+		_make_button_style(Color(0.075, 0.12, 0.14, 1.0))
+	)
+	_flight_record_button.add_theme_stylebox_override(
+		"hover",
+		_make_button_style(Color(0.10, 0.21, 0.23, 1.0))
+	)
+	_flight_record_button.add_theme_stylebox_override(
+		"pressed",
+		_make_button_style(Color(0.055, 0.10, 0.12, 1.0))
+	)
+	_flight_record_button.pressed.connect(_on_flight_record_button_pressed)
+	scroll_content.add_child(_flight_record_button)
+	_evidence_label = _make_status_label(scroll_content)
+	_evidence_label.visible = false
 
 
 func _make_status_label(parent: VBoxContainer) -> Label:
@@ -137,13 +181,27 @@ func _refresh_status() -> void:
 
 	var allocation := _power_management.get_system_allocated_power(SYSTEM_NAME)
 	if allocation >= REQUIRED_ALLOCATION:
+		_flight_record_button.disabled = false
+		_flight_record_button.text = (
+			"FLIGHT RECORD: REVIEWED"
+			if _flight_record_discovered
+			else "OPEN FLIGHT RECORD"
+		)
+		if _flight_record_discovered:
+			_evidence_label.text = "FLIGHT RECORD: REVIEWED\n" + FLIGHT_RECORD_TEXT
+			_evidence_label.visible = true
+		else:
+			_evidence_label.visible = false
 		_system_label.text = "NAVIGATION SYSTEM: ONLINE"
 		_solution_label.text = "NAVIGATION SOLUTION: VALID"
-		_destination_label.text = "SHIP DESTINATION: NOT ON FILE"
+		_destination_label.text = "SHIP DESTINATION: FILED ROUTE ON RECORD"
 		_system_label.add_theme_color_override("font_color", ACCENT)
 		_solution_label.add_theme_color_override("font_color", ACCENT)
 		_destination_label.add_theme_color_override("font_color", PRIMARY_TEXT)
 	else:
+		_flight_record_button.text = "FLIGHT RECORD LOCKED"
+		_flight_record_button.disabled = true
+		_evidence_label.visible = false
 		_system_label.text = "NAVIGATION SYSTEM: OFFLINE"
 		_solution_label.text = "NAVIGATION SOLUTION: INVALID"
 		_destination_label.text = (
@@ -153,6 +211,26 @@ func _refresh_status() -> void:
 		_system_label.add_theme_color_override("font_color", WARNING)
 		_solution_label.add_theme_color_override("font_color", WARNING)
 		_destination_label.add_theme_color_override("font_color", MUTED_TEXT)
+		_evidence_label.add_theme_color_override("font_color", WARNING)
+	if allocation >= REQUIRED_ALLOCATION:
+		_evidence_label.add_theme_color_override("font_color", ACCENT)
+
+
+func _on_flight_record_button_pressed() -> void:
+	if _power_management == null:
+		return
+	if _power_management.get_system_allocated_power(SYSTEM_NAME) < REQUIRED_ALLOCATION:
+		return
+
+	if not _flight_record_discovered:
+		_flight_record_discovered = true
+		flight_record_discovered.emit()
+		_evidence_label.text = "FLIGHT RECORD ADDED\n" + FLIGHT_RECORD_TEXT
+	else:
+		_evidence_label.text = "FLIGHT RECORD: REVIEWED\n" + FLIGHT_RECORD_TEXT
+	_flight_record_button.text = "FLIGHT RECORD: REVIEWED"
+	_evidence_label.visible = true
+	_evidence_label.add_theme_color_override("font_color", ACCENT)
 
 
 func _on_allocation_changed(system_name: String, _previous: int, _current: int) -> void:

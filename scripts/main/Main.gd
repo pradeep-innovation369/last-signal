@@ -35,6 +35,8 @@ var _opening_instruction_dismissed: bool = false
 var _is_game_over: bool = false
 var _is_restoring_saved_game: bool = false
 var _communications_transmission_discovered: bool = false
+var _navigation_flight_record_discovered: bool = false
+var _security_incident_record_discovered: bool = false
 
 
 func _ready() -> void:
@@ -51,6 +53,12 @@ func _ready() -> void:
 	hud.restart_requested.connect(_restart_game)
 	hud.communications_transmission_discovered.connect(
 		_on_communications_transmission_discovered
+	)
+	hud.navigation_flight_record_discovered.connect(
+		_on_navigation_flight_record_discovered
+	)
+	hud.security_incident_record_discovered.connect(
+		_on_security_incident_record_discovered
 	)
 	var tree_root := get_tree().root
 	var skip_save_restore := tree_root.has_meta(SKIP_SAVE_RESTORE_META)
@@ -239,8 +247,12 @@ func _on_navigation_console_interaction_requested(_message: String) -> void:
 	_begin_console_objective(
 		"investigate_navigation",
 		power_management.get_system_allocated_power(PowerManagement.NAVIGATION) >= 25
+		and _navigation_flight_record_discovered
 	)
-	hud.open_navigation_console(power_management)
+	hud.open_navigation_console(
+		power_management,
+		_navigation_flight_record_discovered
+	)
 	player.set_physics_process(false)
 
 
@@ -250,8 +262,12 @@ func _on_security_console_interaction_requested(_message: String) -> void:
 	_begin_console_objective(
 		"access_security",
 		power_management.get_system_allocated_power(PowerManagement.SECURITY) >= 20
+		and _security_incident_record_discovered
 	)
-	hud.open_security_console(power_management)
+	hud.open_security_console(
+		power_management,
+		_security_incident_record_discovered
+	)
 	player.set_physics_process(false)
 
 
@@ -291,6 +307,12 @@ func _restore_saved_game() -> void:
 	_opening_instruction_dismissed = saved_state["opening_tutorial_dismissed"]
 	_communications_transmission_discovered = (
 		saved_state["communications_transmission_discovered"]
+	)
+	_navigation_flight_record_discovered = (
+		saved_state["navigation_flight_record_discovered"]
+	)
+	_security_incident_record_discovered = (
+		saved_state["security_incident_record_discovered"]
 	)
 	player.global_position = saved_position
 	for system_name: String in PowerManagement.SYSTEM_NAMES:
@@ -349,7 +371,9 @@ func _on_save_game_requested() -> void:
 		crew_data_log_system,
 		objective_system,
 		_opening_instruction_dismissed,
-		_communications_transmission_discovered
+		_communications_transmission_discovered,
+		_navigation_flight_record_discovered,
+		_security_incident_record_discovered
 	)
 	hud.show_save_result(save_succeeded)
 
@@ -365,6 +389,22 @@ func _on_power_allocation_changed(system_name: String, _previous: int, new_alloc
 	):
 		_pending_console_objective_id = "investigate_communications"
 	if (
+		system_name == PowerManagement.NAVIGATION
+		and new_allocation >= 25
+		and hud.navigation_console.visible
+		and _navigation_flight_record_discovered
+		and objective_system.get_current_objective_id() == "investigate_navigation"
+	):
+		_pending_console_objective_id = "investigate_navigation"
+	if (
+		system_name == PowerManagement.SECURITY
+		and new_allocation >= 20
+		and hud.security_console.visible
+		and _security_incident_record_discovered
+		and objective_system.get_current_objective_id() == "access_security"
+	):
+		_pending_console_objective_id = "access_security"
+	if (
 		system_name == PowerManagement.LIFE_SUPPORT
 		and new_allocation >= LifeSupport.MINIMUM_STABLE_ALLOCATION
 		and objective_system.get_current_objective_id() == "restore_life_support"
@@ -379,6 +419,24 @@ func _on_communications_transmission_discovered() -> void:
 		and objective_system.get_current_objective_id() == "investigate_communications"
 	):
 		_pending_console_objective_id = "investigate_communications"
+
+
+func _on_navigation_flight_record_discovered() -> void:
+	_navigation_flight_record_discovered = true
+	if (
+		not _is_game_over
+		and objective_system.get_current_objective_id() == "investigate_navigation"
+	):
+		_pending_console_objective_id = "investigate_navigation"
+
+
+func _on_security_incident_record_discovered() -> void:
+	_security_incident_record_discovered = true
+	if (
+		not _is_game_over
+		and objective_system.get_current_objective_id() == "access_security"
+	):
+		_pending_console_objective_id = "access_security"
 
 
 func _on_oxygen_changed(oxygen_level: float) -> void:
@@ -433,6 +491,10 @@ func _check_current_objective_condition(objective_id: String) -> void:
 	):
 		objective_system.complete_current_objective(objective_id)
 	elif objective_id == "review_crew_logs" and crew_data_log_system.are_all_logs_discovered():
+		objective_system.complete_current_objective(objective_id)
+	elif objective_id == "investigate_navigation" and _navigation_flight_record_discovered:
+		objective_system.complete_current_objective(objective_id)
+	elif objective_id == "access_security" and _security_incident_record_discovered:
 		objective_system.complete_current_objective(objective_id)
 
 

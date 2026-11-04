@@ -2,11 +2,18 @@ extends Control
 class_name SecurityConsoleController
 
 signal closed
+signal incident_record_discovered
 
 const REQUIRED_ALLOCATION: int = 20
 const SYSTEM_NAME: String = PowerManagement.SECURITY
 const PANEL_SIZE := Vector2(272.0, 136.0)
 const VIEWPORT_MARGIN: float = 8.0
+const INCIDENT_RECORD_TEXT: String = (
+	"INCIDENT TIME: 2187-04-19 07:39:42\n"
+	+ "ACCESS EVENT: LOWER CRYO ACCESS HATCH\n"
+	+ "AUTHENTICATED: CHIEF ENGINEER'S OWN CREDENTIALS\n"
+	+ "CRYO MANIFEST AT EVENT: ENGINEER POD SEALED; OCCUPANT IN CRYOSLEEP."
+)
 const BACKDROP := Color(0.004, 0.010, 0.018, 0.84)
 const PANEL := Color(0.025, 0.043, 0.060, 1.0)
 const BORDER := Color(0.14, 0.25, 0.29, 1.0)
@@ -21,6 +28,9 @@ var _monitoring_label: Label
 var _access_control_label: Label
 var _alerts_label: Label
 var _panel: PanelContainer
+var _incident_record_button: Button
+var _incident_label: Label
+var _incident_record_discovered: bool = false
 
 
 func _ready() -> void:
@@ -28,8 +38,9 @@ func _ready() -> void:
 	visible = false
 
 
-func open(power_management: PowerManagement) -> void:
+func open(power_management: PowerManagement, incident_record_discovered_before: bool) -> void:
 	_power_management = power_management
+	_incident_record_discovered = incident_record_discovered_before
 	if not _power_management.allocation_changed.is_connected(_on_allocation_changed):
 		_power_management.allocation_changed.connect(_on_allocation_changed)
 	_refresh_status()
@@ -117,6 +128,26 @@ func _build_interface() -> void:
 	_monitoring_label = _make_status_label(scroll_content)
 	_access_control_label = _make_status_label(scroll_content)
 	_alerts_label = _make_status_label(scroll_content)
+	_incident_record_button = Button.new()
+	_incident_record_button.custom_minimum_size.y = 18.0
+	_incident_record_button.add_theme_color_override("font_color", PRIMARY_TEXT)
+	_incident_record_button.add_theme_font_size_override("font_size", 8)
+	_incident_record_button.add_theme_stylebox_override(
+		"normal",
+		_make_button_style(Color(0.075, 0.12, 0.14, 1.0))
+	)
+	_incident_record_button.add_theme_stylebox_override(
+		"hover",
+		_make_button_style(Color(0.10, 0.21, 0.23, 1.0))
+	)
+	_incident_record_button.add_theme_stylebox_override(
+		"pressed",
+		_make_button_style(Color(0.055, 0.10, 0.12, 1.0))
+	)
+	_incident_record_button.pressed.connect(_on_incident_record_button_pressed)
+	scroll_content.add_child(_incident_record_button)
+	_incident_label = _make_status_label(scroll_content)
+	_incident_label.visible = false
 
 
 func _make_status_label(parent: VBoxContainer) -> Label:
@@ -150,15 +181,30 @@ func _refresh_status() -> void:
 
 	var allocation := _power_management.get_system_allocated_power(SYSTEM_NAME)
 	if allocation >= REQUIRED_ALLOCATION:
+		_incident_record_button.disabled = false
+		_incident_record_button.text = (
+			"INCIDENT RECORD: REVIEWED"
+			if _incident_record_discovered
+			else "OPEN INCIDENT RECORD"
+		)
+		if _incident_record_discovered:
+			_incident_label.text = "INCIDENT RECORD: REVIEWED\n" + INCIDENT_RECORD_TEXT
+			_incident_label.visible = true
+		else:
+			_incident_label.visible = false
 		_system_label.text = "SECURITY SYSTEM: ONLINE"
 		_monitoring_label.text = "MONITORING: ACTIVE"
 		_access_control_label.text = "ACCESS CONTROL: ACTIVE"
-		_alerts_label.text = "SECURITY ALERTS: NO SECURITY EVENTS RECORDED"
+		_alerts_label.text = "SECURITY ALERTS: UNEXPLAINED ACCESS EVENT RECORDED"
 		_system_label.add_theme_color_override("font_color", ACCENT)
 		_monitoring_label.add_theme_color_override("font_color", PRIMARY_TEXT)
 		_access_control_label.add_theme_color_override("font_color", PRIMARY_TEXT)
 		_alerts_label.add_theme_color_override("font_color", MUTED_TEXT)
+		_incident_label.add_theme_color_override("font_color", ACCENT)
 	else:
+		_incident_record_button.text = "INCIDENT RECORD LOCKED"
+		_incident_record_button.disabled = true
+		_incident_label.visible = false
 		_system_label.text = "SECURITY SYSTEM: OFFLINE"
 		_monitoring_label.text = "MONITORING: OFFLINE"
 		_access_control_label.text = "ACCESS CONTROL: OFFLINE"
@@ -170,6 +216,24 @@ func _refresh_status() -> void:
 		_monitoring_label.add_theme_color_override("font_color", MUTED_TEXT)
 		_access_control_label.add_theme_color_override("font_color", MUTED_TEXT)
 		_alerts_label.add_theme_color_override("font_color", WARNING)
+		_incident_label.add_theme_color_override("font_color", WARNING)
+
+
+func _on_incident_record_button_pressed() -> void:
+	if _power_management == null:
+		return
+	if _power_management.get_system_allocated_power(SYSTEM_NAME) < REQUIRED_ALLOCATION:
+		return
+
+	if not _incident_record_discovered:
+		_incident_record_discovered = true
+		incident_record_discovered.emit()
+		_incident_label.text = "INCIDENT RECORD ADDED\n" + INCIDENT_RECORD_TEXT
+	else:
+		_incident_label.text = "INCIDENT RECORD: REVIEWED\n" + INCIDENT_RECORD_TEXT
+	_incident_record_button.text = "INCIDENT RECORD: REVIEWED"
+	_incident_label.visible = true
+	_incident_label.add_theme_color_override("font_color", ACCENT)
 
 
 func _on_allocation_changed(system_name: String, _previous: int, _current: int) -> void:

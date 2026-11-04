@@ -6,6 +6,8 @@ signal crew_data_log_opened
 signal save_game_requested
 signal restart_requested
 signal communications_transmission_discovered
+signal navigation_flight_record_discovered
+signal security_incident_record_discovered
 
 @onready var interaction_hint: Label = $Root/InteractionHint
 @onready var message_frame: ColorRect = $Root/MessageFrame
@@ -40,6 +42,12 @@ func _ready() -> void:
 	communications_console.closed.connect(_on_power_console_closed)
 	communications_console.transmission_discovered.connect(
 		_on_communications_transmission_discovered
+	)
+	navigation_console.flight_record_discovered.connect(
+		_on_navigation_flight_record_discovered
+	)
+	security_console.incident_record_discovered.connect(
+		_on_security_incident_record_discovered
 	)
 	navigation_console.closed.connect(_on_power_console_closed)
 	security_console.closed.connect(_on_power_console_closed)
@@ -180,16 +188,22 @@ func close_communications_console() -> void:
 	communications_console.close()
 
 
-func open_navigation_console(power_management: PowerManagement) -> void:
-	navigation_console.open(power_management)
+func open_navigation_console(
+	power_management: PowerManagement,
+	flight_record_discovered: bool
+) -> void:
+	navigation_console.open(power_management, flight_record_discovered)
 
 
 func close_navigation_console() -> void:
 	navigation_console.close()
 
 
-func open_security_console(power_management: PowerManagement) -> void:
-	security_console.open(power_management)
+func open_security_console(
+	power_management: PowerManagement,
+	incident_record_discovered: bool
+) -> void:
+	security_console.open(power_management, incident_record_discovered)
 
 
 func close_security_console() -> void:
@@ -259,6 +273,14 @@ func _on_save_game_button_pressed() -> void:
 
 func _on_communications_transmission_discovered() -> void:
 	communications_transmission_discovered.emit()
+
+
+func _on_navigation_flight_record_discovered() -> void:
+	navigation_flight_record_discovered.emit()
+
+
+func _on_security_incident_record_discovered() -> void:
+	security_incident_record_discovered.emit()
 
 
 func _on_restart_button_pressed() -> void:
