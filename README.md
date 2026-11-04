@@ -10,5 +10,7 @@ the Cryo Chamber, Main Corridor, and Engineering Room.
 
 Move with **WASD** or the **arrow keys**. Approach the power console in Engineering
 and press **E** to read its status. The HUD shows your current location, objective,
-and interaction hint. The game uses a 320x180 base viewport, original pixel-art
-spacecraft details, and an animated four-direction astronaut.
+and interaction hint. The game uses a 320x180 logical viewport upscaled with
+integer scaling to a resizable 1280x720 window. The connected rooms sit inside a
+3D spacecraft hull, and the orange 3D astronaut follows the existing 2D movement
+and collision system.

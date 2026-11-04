@@ -1,17 +1,37 @@
 extends Node3D
 class_name ShipWorld3D
 
-const PLAYER_TEXTURE: Texture2D = preload("res://assets/art/characters/astronaut_4dir.svg")
+const HULL_OUTLINE: Array[Vector2] = [
+	Vector2(-360, 0), Vector2(-318, -38), Vector2(-278, -90),
+	Vector2(-238, -118), Vector2(-100, -118), Vector2(-54, -78),
+	Vector2(150, -64), Vector2(205, -96), Vector2(286, -116),
+	Vector2(378, -114), Vector2(430, -96), Vector2(478, -62),
+	Vector2(510, -62), Vector2(510, -30), Vector2(488, -16),
+	Vector2(488, 16), Vector2(510, 30), Vector2(510, 62),
+	Vector2(478, 62), Vector2(430, 96), Vector2(378, 114),
+	Vector2(286, 116), Vector2(205, 96), Vector2(150, 64),
+	Vector2(-54, 78), Vector2(-100, 118), Vector2(-238, 118),
+	Vector2(-278, 90), Vector2(-318, 38)
+]
 
 @onready var camera: Camera3D = $Camera3D
 @onready var player_avatar: Node3D = $PlayerAvatar
-@onready var player_sprite: Sprite3D = $PlayerAvatar/Sprite3D
 @onready var player_shadow: MeshInstance3D = $PlayerAvatar/Shadow
 
 var _materials: Dictionary = {}
 var _box_transforms: Dictionary = {}
 var _unit_box: BoxMesh
 var _shadow_mesh: CylinderMesh
+var _character_model: Node3D
+var _torso: Node3D
+var _helmet: Node3D
+var _left_arm: Node3D
+var _right_arm: Node3D
+var _left_leg: Node3D
+var _right_leg: Node3D
+var _walk_phase: float = 0.0
+var _idle_phase: float = 0.0
+var _movement_blend: float = 0.0
 
 
 func _ready() -> void:
@@ -22,26 +42,34 @@ func _ready() -> void:
 	_build_cryo_room()
 	_build_corridor()
 	_build_engineering_room()
+	_create_avatar()
 	_flush_box_batches()
-	player_sprite.texture = PLAYER_TEXTURE
-	player_sprite.hframes = 4
-	player_sprite.vframes = 4
-	player_sprite.pixel_size = 1.0
-	player_sprite.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
-	player_sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	player_sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
-	player_sprite.position = Vector3(0, 10, 0)
 	player_shadow.position = Vector3(0, 0.025, 0)
 	player_shadow.mesh = _shadow_mesh
 	player_shadow.material_override = _materials["shadow"]
 
 
-func sync_view(camera_center: Vector2, player_position: Vector2, frame: Vector2i) -> void:
+func sync_view(
+	camera_center: Vector2,
+	player_position: Vector2,
+	player_velocity: Vector2,
+	facing_row: int,
+	delta: float
+) -> void:
 	var target := Vector3(camera_center.x, 0, camera_center.y)
 	camera.global_position = target + Vector3(0, 350, 155)
 	camera.look_at(target, Vector3.UP)
 	player_avatar.position = Vector3(player_position.x, 0.18, player_position.y)
-	player_sprite.frame_coords = frame
+	match facing_row:
+		1:
+			player_avatar.rotation.y = -PI * 0.5
+		2:
+			player_avatar.rotation.y = PI * 0.5
+		3:
+			player_avatar.rotation.y = PI
+		_:
+			player_avatar.rotation.y = 0.0
+	_animate_avatar(player_velocity, delta)
 
 
 func _create_materials() -> void:
@@ -57,9 +85,6 @@ func _create_materials() -> void:
 	_material("cryo_floor", Color("#3d5960"), 0.58, 0.64)
 	_material("corridor_floor", Color("#485b61"), 0.5, 0.7)
 	_material("engineering_floor", Color("#3b5158"), 0.58, 0.64)
-	_material("tile_light", Color("#526b70"), 0.58, 0.6)
-	_material("tile_mid", Color("#40585f"), 0.56, 0.66)
-	_material("tile_dark", Color("#2b424b"), 0.52, 0.7)
 	_material("seam", Color("#101d25"), 0.24, 0.86)
 	_material("steel", Color("#344c54"), 0.7, 0.48)
 	_material("steel_light", Color("#81938a"), 0.74, 0.4)
@@ -74,6 +99,12 @@ func _create_materials() -> void:
 	_material("red", Color("#a83e3d"), 0.16, 0.5, true)
 	_material("black", Color("#0b171f"), 0.18, 0.72)
 	_material("shadow", Color("#0a141b"), 0.0, 1.0)
+	_material("suit_orange", Color("#e66b25"), 0.04, 0.62)
+	_material("suit_highlight", Color("#ff9a42"), 0.02, 0.56)
+	_material("suit_shadow", Color("#9c3d1d"), 0.08, 0.7)
+	_material("suit_white", Color("#d9ded5"), 0.12, 0.48)
+	_material("visor_dark", Color("#071c2a"), 0.42, 0.2)
+	_material("visor_glint", Color("#5bd7df"), 0.25, 0.22, true)
 
 
 func _material(
@@ -87,6 +118,7 @@ func _material(
 	material.albedo_color = color
 	material.metallic = metallic
 	material.roughness = roughness
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	if emissive:
 		material.emission_enabled = true
 		material.emission = color
@@ -149,107 +181,123 @@ func _create_world() -> void:
 
 
 func _build_floor() -> void:
-	_box("HullSubfloor", Vector3(80, -1.6, 0), Vector3(800, 3, 240), "floor_base")
-	_floor_tiles("CryoDeck", -200, 0, 224, 224, "cryo_floor")
-	_floor_tiles("CorridorDeck", 40, 0, 224, 112, "corridor_floor")
-	_floor_tiles("EngineeringDeck", 320, 0, 304, 224, "engineering_floor")
-
-	_batch_boxes(
-		"CryoRecessedGrates",
-		Vector3(14, 0.35, 38),
-		"seam",
-		[
-			Vector3(-302, 0.15, -72), Vector3(-98, 0.15, -72),
-			Vector3(-302, 0.15, 72), Vector3(-98, 0.15, 72)
-		]
+	_add_polygon("HullFoundation", PackedVector2Array(HULL_OUTLINE), -2.0, "floor_base")
+	_add_polygon(
+		"CryoDeck",
+		PackedVector2Array([
+			Vector2(-312, -34), Vector2(-274, -84), Vector2(-236, -110),
+			Vector2(-96, -112), Vector2(-96, -64), Vector2(-80, -64),
+			Vector2(-80, 64), Vector2(-96, 64), Vector2(-96, 112),
+			Vector2(-236, 110), Vector2(-274, 84), Vector2(-312, 34)
+		]),
+		0.02,
+		"cryo_floor"
+	)
+	_add_polygon(
+		"CorridorDeck",
+		PackedVector2Array([
+			Vector2(-80, -64), Vector2(160, -64),
+			Vector2(160, 64), Vector2(-80, 64)
+		]),
+		0.04,
+		"corridor_floor"
+	)
+	_add_polygon(
+		"EngineeringDeck",
+		PackedVector2Array([
+			Vector2(160, -64), Vector2(216, -88), Vector2(286, -108),
+			Vector2(378, -106), Vector2(428, -88), Vector2(478, -54),
+			Vector2(478, -25), Vector2(490, -12), Vector2(490, 12),
+			Vector2(478, 25), Vector2(478, 54), Vector2(428, 88),
+			Vector2(378, 106), Vector2(286, 108), Vector2(216, 88),
+			Vector2(160, 64)
+		]),
+		0.06,
+		"engineering_floor"
 	)
 	_batch_boxes(
-		"EngineeringRecessedGrates",
-		Vector3(16, 0.35, 42),
+		"DeckSeams",
+		Vector3(1, 0.16, 96),
 		"seam",
-		[
-			Vector3(184, 0.15, -74), Vector3(456, 0.15, -74),
-			Vector3(184, 0.15, 74), Vector3(456, 0.15, 74)
-		]
+		[Vector3(-280, 0.13, 0), Vector3(-124, 0.13, 0), Vector3(184, 0.15, 0)]
 	)
 	_batch_boxes(
 		"CorridorThresholdRails",
 		Vector3(4, 0.8, 104),
 		"steel_light",
-		[Vector3(-74, 0.2, 0), Vector3(154, 0.2, 0)]
+		[Vector3(-74, 0.3, 0), Vector3(154, 0.3, 0)]
 	)
 
 
-func _floor_tiles(
+func _add_polygon(
 	label: String,
-	center_x: float,
-	center_z: float,
-	width: float,
-	depth: float,
-	base_material: String
+	points: PackedVector2Array,
+	height: float,
+	material_key: String
 ) -> void:
-	_box(
-		label + "Foundation",
-		Vector3(center_x, -0.3, center_z),
-		Vector3(width, 0.8, depth),
-		base_material
-	)
-	var light_tiles: Array[Vector3] = []
-	var mid_tiles: Array[Vector3] = []
-	var dark_tiles: Array[Vector3] = []
-	var x_count := int(width / 40.0)
-	var z_count := int(depth / 40.0)
-	for x_index in range(x_count):
-		for z_index in range(z_count):
-			var position := Vector3(
-				center_x - width * 0.5 + 20.0 + x_index * 40.0,
-				0.14,
-				center_z - depth * 0.5 + 20.0 + z_index * 40.0
-			)
-			var variation := (x_index * 3 + z_index * 5) % 7
-			if variation == 0:
-				dark_tiles.append(position)
-			elif variation == 1 or variation == 4:
-				light_tiles.append(position)
-			else:
-				mid_tiles.append(position)
-	_batch_boxes(label + "TilesLight", Vector3(37, 0.08, 37), "tile_light", light_tiles)
-	_batch_boxes(label + "TilesMid", Vector3(37, 0.08, 37), "tile_mid", mid_tiles)
-	_batch_boxes(label + "TilesDark", Vector3(37, 0.08, 37), "tile_dark", dark_tiles)
-	var inserts: Array[Vector3] = []
-	for x_index in range(0, x_count, 2):
-		for z_index in range(0, z_count, 2):
-			inserts.append(Vector3(
-				center_x - width * 0.5 + 20.0 + x_index * 40.0,
-				0.34,
-				center_z - depth * 0.5 + 20.0 + z_index * 40.0
-			))
-	_batch_boxes(label + "RaisedInserts", Vector3(10, 0.32, 10), "steel_dark", inserts)
-	_box(
-		label + "NorthTrim",
-		Vector3(center_x, 0.2, center_z - depth * 0.5 + 2.0),
-		Vector3(width - 8.0, 0.5, 2.0),
-		"steel_light"
-	)
-	_box(
-		label + "SouthTrim",
-		Vector3(center_x, 0.2, center_z + depth * 0.5 - 2.0),
-		Vector3(width - 8.0, 0.5, 2.0),
-		"steel_dark"
-	)
+	var indices := Geometry2D.triangulate_polygon(points)
+	if indices.is_empty():
+		push_error("Could not triangulate ship deck polygon: %s" % label)
+		return
+
+	var vertices := PackedVector3Array()
+	var normals := PackedVector3Array()
+	for point in points:
+		vertices.append(Vector3(point.x, height, point.y))
+		normals.append(Vector3.UP)
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	var surface := MeshInstance3D.new()
+	surface.name = label
+	surface.mesh = mesh
+	surface.material_override = _materials[material_key]
+	add_child(surface)
 
 
 func _build_walls() -> void:
-	_box("RearBulkhead", Vector3(80, 18, -116), Vector3(800, 36, 8), "steel_dark")
-	_box("RearBulkheadCap", Vector3(80, 37, -116), Vector3(800, 2, 10), "steel_light")
-	_box("OuterWestBulkhead", Vector3(-316, 17, 0), Vector3(8, 34, 240), "steel_dark")
-	_box("OuterEastBulkhead", Vector3(476, 17, 0), Vector3(8, 34, 240), "steel_dark")
-	_box("OuterWestCap", Vector3(-316, 35, 0), Vector3(10, 2, 240), "steel_light")
-	_box("OuterEastCap", Vector3(476, 35, 0), Vector3(10, 2, 240), "steel_light")
+	for index in range(HULL_OUTLINE.size()):
+		var start: Vector2 = HULL_OUTLINE[index]
+		var end: Vector2 = HULL_OUTLINE[(index + 1) % HULL_OUTLINE.size()]
+		var segment := end - start
+		var midpoint := (start + end) * 0.5
+		var yaw := atan2(-segment.y, segment.x)
+		var wall_basis := Basis(Vector3.UP, yaw)
+		_box(
+			"HullBulkhead_%02d" % index,
+			Vector3(midpoint.x, 12, midpoint.y),
+			Vector3(segment.length(), 24, 10),
+			"steel_dark"
+		)
+		_box(
+			"HullCap_%02d" % index,
+			Vector3(midpoint.x, 24.5, midpoint.y),
+			Vector3(segment.length(), 1, 11),
+			"steel_light"
+		)
+		_set_last_material_box_basis("steel_dark", wall_basis)
+		_set_last_material_box_basis("steel_light", wall_basis)
 
-	for divider_x in [-80.0, 160.0]:
-		_box("DividerNorth_%d" % int(divider_x), Vector3(divider_x, 15, -68), Vector3(8, 30, 88), "steel_dark")
-		_box("DividerSouth_%d" % int(divider_x), Vector3(divider_x, 15, 68), Vector3(8, 30, 88), "steel_dark")
+	for divider_x: float in [-80.0, 160.0]:
+		var divider_depth := 72.0 if divider_x < 0.0 else 40.0
+		var divider_outer_z := 24.0 + divider_depth
+		var divider_center_z := (24.0 + divider_outer_z) * 0.5
+		_box(
+			"DividerNorth_%d" % int(divider_x),
+			Vector3(divider_x, 15, -divider_center_z),
+			Vector3(8, 30, divider_depth),
+			"steel_dark"
+		)
+		_box(
+			"DividerSouth_%d" % int(divider_x),
+			Vector3(divider_x, 15, divider_center_z),
+			Vector3(8, 30, divider_depth),
+			"steel_dark"
+		)
 		_box("DoorJambNear_%d" % int(divider_x), Vector3(divider_x, 16, -25), Vector3(12, 32, 6), "steel_light")
 		_box("DoorJambFar_%d" % int(divider_x), Vector3(divider_x, 16, 25), Vector3(12, 32, 6), "steel_light")
 		_box("DoorHeader_%d" % int(divider_x), Vector3(divider_x, 34, 0), Vector3(12, 4, 52), "steel")
@@ -261,15 +309,158 @@ func _build_walls() -> void:
 			_box("DoorFace_%s_%d" % [side_name, int(divider_x)], Vector3(divider_x, 15, leaf_z + 6.8), Vector3(6, 22, 0.6), "steel")
 			_box("DoorStatus_%s_%d" % [side_name, int(divider_x)], Vector3(divider_x, 15, leaf_z + 7.2), Vector3(2, 10, 0.3), "cyan_soft")
 
-	_box("CorridorNorthRail", Vector3(40, 12, -68), Vector3(224, 24, 7), "steel_dark")
-	_box("CorridorSouthRail", Vector3(40, 12, 68), Vector3(224, 24, 7), "steel_dark")
-	_box("CorridorNorthCap", Vector3(40, 25, -68), Vector3(224, 2, 10), "steel_light")
-	_box("CorridorSouthCap", Vector3(40, 25, 68), Vector3(224, 2, 10), "steel_light")
+	_box("CorridorNorthRail", Vector3(40, 12, -70), Vector3(240, 24, 12), "steel_dark")
+	_box("CorridorSouthRail", Vector3(40, 12, 70), Vector3(240, 24, 12), "steel_dark")
+	_box("CorridorNorthCap", Vector3(40, 25, -70), Vector3(240, 2, 14), "steel_light")
+	_box("CorridorSouthCap", Vector3(40, 25, 70), Vector3(240, 2, 14), "steel_light")
 
-	for x in [-288.0, -184.0, -16.0, 88.0, 216.0, 304.0, 416.0]:
-		_box("RearWallRib_%d" % int(x), Vector3(x, 21, -110), Vector3(3, 22, 3), "steel_light")
-	_box("RearWallPipe", Vector3(80, 30, -106), Vector3(780, 4, 4), "steel")
-	_box("RearPipeHighlight", Vector3(80, 32.5, -106), Vector3(780, 1, 1), "steel_light")
+	_box("ForwardHullStripe", Vector3(-300, 2, 0), Vector3(2, 1, 36), "cyan_soft")
+	for engine_z: float in [-44.0, 44.0]:
+		_box("EnginePod_%d" % int(engine_z), Vector3(478, 8, engine_z), Vector3(28, 14, 25), "steel_dark")
+		_box("EngineGlow_%d" % int(engine_z), Vector3(493, 8, engine_z), Vector3(1, 7, 14), "cyan")
+
+
+func _set_last_material_box_basis(material_key: String, basis: Basis) -> void:
+	var transforms: Array = _box_transforms[material_key]
+	var transform: Transform3D = transforms[-1]
+	transform.basis = basis * transform.basis
+	transforms[-1] = transform
+
+
+func _create_avatar() -> void:
+	_character_model = Node3D.new()
+	_character_model.name = "OrangeAstronaut"
+	player_avatar.add_child(_character_model)
+
+	_torso = Node3D.new()
+	_torso.name = "Torso"
+	_torso.position.y = 15.0
+	_character_model.add_child(_torso)
+	_capsule(_torso, "SuitBody", 5.2, 14.0, Vector3.ZERO, "suit_orange")
+	_sphere(_torso, "ChestArmor", 5.0, Vector3(1.0, 0.82, 0.84), Vector3(0, 1, 0), "suit_highlight")
+	_box_part(_torso, "WaistSeal", Vector3(8, 2.4, 7), Vector3(0, -5.2, 0), "suit_shadow")
+	_box_part(_torso, "SuitBadge", Vector3(3.2, 2.4, 0.7), Vector3(0, 1.2, 5.0), "visor_glint")
+
+	_helmet = Node3D.new()
+	_helmet.name = "Helmet"
+	_helmet.position.y = 11.0
+	_torso.add_child(_helmet)
+	_sphere(_helmet, "HelmetShell", 7.5, Vector3(1.0, 0.94, 0.94), Vector3.ZERO, "suit_highlight")
+	_sphere(_helmet, "VisorSeal", 6.25, Vector3(1.0, 0.69, 0.34), Vector3(0, -0.3, 5.45), "suit_shadow")
+	_sphere(_helmet, "ReflectiveVisor", 5.85, Vector3(1.0, 0.64, 0.22), Vector3(0, -0.3, 6.0), "visor_dark")
+	_sphere(_helmet, "VisorGlint", 1.0, Vector3(0.52, 1.8, 0.13), Vector3(-2.2, 1.7, 7.15), "visor_glint")
+
+	_box_part(_torso, "LifeSupportPack", Vector3(9, 12, 5), Vector3(0, 0, -5.4), "suit_shadow")
+	_box_part(_torso, "PackPanel", Vector3(6, 8, 1), Vector3(0, 0.5, -8.3), "steel")
+	for side: float in [-1.0, 1.0]:
+		var tank := CylinderMesh.new()
+		tank.top_radius = 1.7
+		tank.bottom_radius = 1.7
+		tank.height = 9.0
+		_mesh_part(
+			_torso,
+			"PackTank_%d" % int(side),
+			tank,
+			Vector3(side * 5.1, -0.2, -4.8),
+			"suit_highlight"
+		)
+
+	_left_arm = _limb_pivot("LeftArm", Vector3(-6.2, 1.0, 0))
+	_right_arm = _limb_pivot("RightArm", Vector3(6.2, 1.0, 0))
+	_capsule(_left_arm, "Sleeve", 2.5, 11.0, Vector3(0, -4.0, 0), "suit_orange")
+	_capsule(_right_arm, "Sleeve", 2.5, 11.0, Vector3(0, -4.0, 0), "suit_orange")
+	_sphere(_left_arm, "Glove", 2.6, Vector3(1, 0.86, 1), Vector3(0, -9.1, 0.5), "suit_white")
+	_sphere(_right_arm, "Glove", 2.6, Vector3(1, 0.86, 1), Vector3(0, -9.1, 0.5), "suit_white")
+
+	_left_leg = _limb_pivot("LeftLeg", Vector3(-2.8, 8.0, 0))
+	_right_leg = _limb_pivot("RightLeg", Vector3(2.8, 8.0, 0))
+	_capsule(_left_leg, "Trouser", 2.7, 9.5, Vector3(0, -3.4, 0), "suit_orange")
+	_capsule(_right_leg, "Trouser", 2.7, 9.5, Vector3(0, -3.4, 0), "suit_orange")
+	_sphere(_left_leg, "Boot", 3.0, Vector3(1.0, 0.78, 1.3), Vector3(0, -7.0, 1.1), "suit_shadow")
+	_sphere(_right_leg, "Boot", 3.0, Vector3(1.0, 0.78, 1.3), Vector3(0, -7.0, 1.1), "suit_shadow")
+
+
+func _animate_avatar(player_velocity: Vector2, delta: float) -> void:
+	var speed := player_velocity.length()
+	var target_blend := clampf(speed / 72.0, 0.0, 1.0)
+	_movement_blend = move_toward(_movement_blend, target_blend, delta * 7.0)
+	_idle_phase += delta * 2.0
+	if speed > 0.1:
+		_walk_phase += delta * (5.0 + speed * 0.08)
+
+	var stride := sin(_walk_phase) * 0.52 * _movement_blend
+	_left_leg.rotation.x = lerp_angle(_left_leg.rotation.x, stride, minf(delta * 10.0, 1.0))
+	_right_leg.rotation.x = lerp_angle(_right_leg.rotation.x, -stride, minf(delta * 10.0, 1.0))
+	_left_arm.rotation.x = lerp_angle(_left_arm.rotation.x, -stride * 0.62, minf(delta * 10.0, 1.0))
+	_right_arm.rotation.x = lerp_angle(_right_arm.rotation.x, stride * 0.62, minf(delta * 10.0, 1.0))
+	_torso.position.y = 15.0 + sin(_idle_phase) * 0.35 + absf(stride) * 0.45
+	_torso.rotation.z = sin(_walk_phase) * 0.025 * _movement_blend
+	_helmet.rotation.z = sin(_idle_phase * 0.7) * 0.015
+
+
+func _limb_pivot(label: String, position: Vector3) -> Node3D:
+	var pivot := Node3D.new()
+	pivot.name = label
+	pivot.position = position
+	_torso.add_child(pivot)
+	return pivot
+
+
+func _capsule(
+	parent: Node3D,
+	label: String,
+	radius: float,
+	height: float,
+	position: Vector3,
+	material_key: String
+) -> void:
+	var mesh := CapsuleMesh.new()
+	mesh.radius = radius
+	mesh.height = height
+	_mesh_part(parent, label, mesh, position, material_key)
+
+
+func _sphere(
+	parent: Node3D,
+	label: String,
+	radius: float,
+	scale: Vector3,
+	position: Vector3,
+	material_key: String
+) -> void:
+	var mesh := SphereMesh.new()
+	mesh.radius = radius
+	mesh.height = radius * 2.0
+	var part := _mesh_part(parent, label, mesh, position, material_key)
+	part.scale = scale
+
+
+func _box_part(
+	parent: Node3D,
+	label: String,
+	size: Vector3,
+	position: Vector3,
+	material_key: String
+) -> void:
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	_mesh_part(parent, label, mesh, position, material_key)
+
+
+func _mesh_part(
+	parent: Node3D,
+	label: String,
+	mesh: Mesh,
+	position: Vector3,
+	material_key: String
+) -> MeshInstance3D:
+	var part := MeshInstance3D.new()
+	part.name = label
+	part.mesh = mesh
+	part.position = position
+	part.material_override = _materials[material_key]
+	parent.add_child(part)
+	return part
 
 
 func _build_cryo_room() -> void:
@@ -277,15 +468,13 @@ func _build_cryo_room() -> void:
 	_cryo_pod("CompactCryoPod", Vector3(-264, 0, 42), 60.0)
 
 	_terminal("CryoDiagnosticTerminal", Vector3(-136, 0, -102), 0.9)
-	_terminal("CryoWallTerminal", Vector3(-296, 0, -102), 0.75)
+	_terminal("CryoWallTerminal", Vector3(-182, 0, -102), 0.75)
 	_panel("CryoOverheadPanel", Vector3(-196, 24, -108), Vector3(96, 14, 7))
 	_box("CryoOverheadCyan", Vector3(-196, 31, -103), Vector3(56, 1.5, 1), "cyan_soft")
 	_box("CryoOverheadAmber", Vector3(-232, 31, -103), Vector3(8, 1.5, 1), "amber")
-	_vent("CryoNorthVent", Vector3(-112, 8, -102), Vector3(18, 8, 6))
-	_vent("CryoSouthVent", Vector3(-112, 8, 102), Vector3(18, 8, 6))
+	_vent("CryoNorthVent", Vector3(-112, 8, -94), Vector3(18, 8, 6))
+	_vent("CryoSouthVent", Vector3(-112, 8, 94), Vector3(18, 8, 6))
 
-	for offset in [0.0, 8.0, 16.0]:
-		_box("CryoCoolantLine_%d" % int(offset), Vector3(-200, 19 + offset * 0.2, -105), Vector3(198, 2, 3), "steel")
 	_box("CryoConduitDrop", Vector3(-104, 13, -91), Vector3(3, 26, 3), "steel_light")
 	_box("CryoAlertBeacon", Vector3(-104, 27, -91), Vector3(5, 4, 5), "red")
 
@@ -333,7 +522,7 @@ func _build_engineering_room() -> void:
 	_reactor("CoolantGenerator", Vector3(420, 0, -76), 0.88)
 	_reactor("PowerTransferUnit", Vector3(220, 0, 76), 0.85)
 	_terminal("EngineeringWallConsole", Vector3(264, 0, -102), 1.05)
-	_terminal("EngineeringDiagnostic", Vector3(448, 0, -102), 0.9)
+	_terminal("EngineeringDiagnostic", Vector3(440, 0, -66), 0.9)
 	_panel("EngineeringWallRack", Vector3(362, 23, -108), Vector3(76, 24, 8))
 	_box("RackDisplayPrimary", Vector3(350, 31, -102), Vector3(22, 8, 1), "cyan_soft")
 	_box("RackDisplaySecondary", Vector3(378, 31, -102), Vector3(18, 8, 1), "glass")

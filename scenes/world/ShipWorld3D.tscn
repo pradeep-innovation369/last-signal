@@ -10,6 +10,3 @@ script = ExtResource("1_world")
 [node name="PlayerAvatar" type="Node3D" parent="."]
 
 [node name="Shadow" type="MeshInstance3D" parent="PlayerAvatar"]
-
-[node name="Sprite3D" type="Sprite3D" parent="PlayerAvatar"]
-centered = true

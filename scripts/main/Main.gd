@@ -13,7 +13,7 @@ var nearby_interactable: Interactable
 
 func _ready() -> void:
 	world_texture.texture = render_viewport.get_texture()
-	_sync_world_view()
+	_sync_world_view(0.0)
 	power_console.player_entered.connect(_on_interactable_entered)
 	power_console.player_exited.connect(_on_interactable_exited)
 	power_console.interaction_requested.connect(hud.show_message)
@@ -22,15 +22,17 @@ func _ready() -> void:
 		location.location_entered.connect(hud.set_location)
 
 
-func _process(_delta: float) -> void:
-	_sync_world_view()
+func _process(delta: float) -> void:
+	_sync_world_view(delta)
 
 
-func _sync_world_view() -> void:
+func _sync_world_view(delta: float) -> void:
 	ship_world.sync_view(
 		player_camera.get_screen_center_position(),
 		player.global_position,
-		player.sprite.frame_coords
+		player.get_real_velocity(),
+		player.sprite.frame_coords.y,
+		delta
 	)
 
 

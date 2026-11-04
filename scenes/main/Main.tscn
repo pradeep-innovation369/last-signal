@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/world/PowerConsole.tscn" id="2_console"]
@@ -7,14 +7,11 @@
 [ext_resource type="Script" path="res://scripts/world/LocationArea.gd" id="5_location"]
 [ext_resource type="PackedScene" path="res://scenes/world/ShipWorld3D.tscn" id="16_ship_world"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_outer_horizontal"]
-size = Vector2(800, 16)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_cryo_divider"]
+size = Vector2(16, 72)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_outer_vertical"]
-size = Vector2(16, 240)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_divider"]
-size = Vector2(16, 96)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_engineering_divider"]
+size = Vector2(16, 40)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_corridor_wall"]
 size = Vector2(240, 12)
@@ -28,11 +25,8 @@ size = Vector2(240, 128)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_location_engineering"]
 size = Vector2(320, 240)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_cryo_pod_one"]
-size = Vector2(36, 64)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_cryo_pod_two"]
-size = Vector2(36, 56)
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_cryo_pod"]
+size = Vector2(40, 48)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_engineering_bench"]
 size = Vector2(64, 24)
@@ -52,6 +46,7 @@ layer = -1
 
 [node name="WorldTexture" type="Sprite2D" parent="WorldRenderLayer"]
 position = Vector2(160, 90)
+texture_filter = 1
 
 [node name="WorldVisuals" type="Node2D" parent="."]
 
@@ -73,37 +68,25 @@ visible = false
 collision_layer = 1
 collision_mask = 1
 
-[node name="NorthBoundary" type="CollisionShape2D" parent="Gameplay/Walls"]
-position = Vector2(80, -128)
-shape = SubResource("RectangleShape2D_outer_horizontal")
-
-[node name="SouthBoundary" type="CollisionShape2D" parent="Gameplay/Walls"]
-position = Vector2(80, 128)
-shape = SubResource("RectangleShape2D_outer_horizontal")
-
-[node name="WestBoundary" type="CollisionShape2D" parent="Gameplay/Walls"]
-position = Vector2(-328, 0)
-shape = SubResource("RectangleShape2D_outer_vertical")
-
-[node name="EastBoundary" type="CollisionShape2D" parent="Gameplay/Walls"]
-position = Vector2(488, 0)
-shape = SubResource("RectangleShape2D_outer_vertical")
+[node name="OuterHullBoundary" type="CollisionPolygon2D" parent="Gameplay/Walls"]
+build_mode = 1
+polygon = PackedVector2Array(-360, 0, -318, -38, -278, -90, -238, -118, -100, -118, -54, -78, 150, -64, 205, -96, 286, -116, 378, -114, 430, -96, 478, -62, 510, -62, 510, -30, 488, -16, 488, 16, 510, 30, 510, 62, 478, 62, 430, 96, 378, 114, 286, 116, 205, 96, 150, 64, -54, 78, -100, 118, -238, 118, -278, 90, -318, 38)
 
 [node name="CryoDividerNorth" type="CollisionShape2D" parent="Gameplay/Walls"]
-position = Vector2(-80, -72)
-shape = SubResource("RectangleShape2D_divider")
+position = Vector2(-80, -60)
+shape = SubResource("RectangleShape2D_cryo_divider")
 
 [node name="CryoDividerSouth" type="CollisionShape2D" parent="Gameplay/Walls"]
-position = Vector2(-80, 72)
-shape = SubResource("RectangleShape2D_divider")
+position = Vector2(-80, 60)
+shape = SubResource("RectangleShape2D_cryo_divider")
 
 [node name="EngineeringDividerNorth" type="CollisionShape2D" parent="Gameplay/Walls"]
-position = Vector2(160, -72)
-shape = SubResource("RectangleShape2D_divider")
+position = Vector2(160, -44)
+shape = SubResource("RectangleShape2D_engineering_divider")
 
 [node name="EngineeringDividerSouth" type="CollisionShape2D" parent="Gameplay/Walls"]
-position = Vector2(160, 72)
-shape = SubResource("RectangleShape2D_divider")
+position = Vector2(160, 44)
+shape = SubResource("RectangleShape2D_engineering_divider")
 
 [node name="CorridorNorth" type="CollisionShape2D" parent="Gameplay/Walls"]
 position = Vector2(40, -70)
@@ -115,11 +98,11 @@ shape = SubResource("RectangleShape2D_corridor_wall")
 
 [node name="CryoPodOne" type="CollisionShape2D" parent="Gameplay/Walls"]
 position = Vector2(-264, -38)
-shape = SubResource("RectangleShape2D_cryo_pod_one")
+shape = SubResource("RectangleShape2D_cryo_pod")
 
 [node name="CryoPodTwo" type="CollisionShape2D" parent="Gameplay/Walls"]
 position = Vector2(-264, 42)
-shape = SubResource("RectangleShape2D_cryo_pod_two")
+shape = SubResource("RectangleShape2D_cryo_pod")
 
 [node name="EngineeringBench" type="CollisionShape2D" parent="Gameplay/Walls"]
 position = Vector2(408, -58)
