@@ -4,6 +4,8 @@ class_name CommunicationsConsoleController
 signal closed
 
 const REQUIRED_ALLOCATION: int = 20
+const PANEL_SIZE := Vector2(272.0, 128.0)
+const VIEWPORT_MARGIN: float = 8.0
 const SYSTEM_NAME: String = "Communications"
 const INCOMING_TRANSMISSION: String = (
 	"...if this reaches anyone aboard, do not answer the signal. "
@@ -22,6 +24,7 @@ var _power_management: PowerManagement
 var _allocation_label: Label
 var _message_label: Label
 var _state_label: Label
+var _panel: PanelContainer
 
 
 func _ready() -> void:
@@ -52,14 +55,13 @@ func _build_interface() -> void:
 	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(backdrop)
 
-	var panel := PanelContainer.new()
+	_panel = PanelContainer.new()
+	var panel := _panel
 	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.offset_left = -136.0
-	panel.offset_top = -64.0
-	panel.offset_right = 136.0
-	panel.offset_bottom = 64.0
 	panel.add_theme_stylebox_override("panel", _make_panel_style(PANEL, BORDER))
 	add_child(panel)
+	_resize_panel()
+	get_viewport().size_changed.connect(_resize_panel)
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 9)
@@ -105,13 +107,26 @@ func _build_interface() -> void:
 	divider.color = BORDER
 	layout.add_child(divider)
 
+	var scroll_container := ScrollContainer.new()
+	scroll_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	layout.add_child(scroll_container)
+
+	var scroll_content := VBoxContainer.new()
+	scroll_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll_content.size_flags_vertical = Control.SIZE_FILL
+	scroll_content.add_theme_constant_override("separation", 6)
+	scroll_container.add_child(scroll_content)
+
 	_state_label = Label.new()
 	_state_label.add_theme_font_size_override("font_size", 9)
-	layout.add_child(_state_label)
+	_state_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_state_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	scroll_content.add_child(_state_label)
 
 	var allocation_row := HBoxContainer.new()
 	allocation_row.custom_minimum_size.y = 14.0
-	layout.add_child(allocation_row)
+	scroll_content.add_child(allocation_row)
 
 	var allocation_heading := Label.new()
 	allocation_heading.text = "COMMUNICATIONS POWER"
@@ -127,9 +142,10 @@ func _build_interface() -> void:
 	allocation_row.add_child(_allocation_label)
 
 	var message_panel := PanelContainer.new()
+	message_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	message_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	message_panel.add_theme_stylebox_override("panel", _make_panel_style(Color(0.035, 0.058, 0.072, 1.0), BORDER))
-	layout.add_child(message_panel)
+	scroll_content.add_child(message_panel)
 
 	var message_margin := MarginContainer.new()
 	message_margin.add_theme_constant_override("margin_left", 7)
@@ -142,6 +158,7 @@ func _build_interface() -> void:
 	_message_label.add_theme_color_override("font_color", PRIMARY_TEXT)
 	_message_label.add_theme_font_size_override("font_size", 9)
 	_message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_message_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_message_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	message_margin.add_child(_message_label)
 
@@ -150,7 +167,25 @@ func _build_interface() -> void:
 	footer.add_theme_color_override("font_color", MUTED_TEXT)
 	footer.add_theme_font_size_override("font_size", 8)
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	layout.add_child(footer)
+	footer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	footer.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	scroll_content.add_child(footer)
+
+
+func _resize_panel() -> void:
+	var viewport_size := get_viewport_rect().size
+	var available_size := Vector2(
+		maxf(0.0, viewport_size.x - VIEWPORT_MARGIN * 2.0),
+		maxf(0.0, viewport_size.y - VIEWPORT_MARGIN * 2.0)
+	)
+	var panel_size := Vector2(
+		minf(PANEL_SIZE.x, available_size.x),
+		minf(PANEL_SIZE.y, available_size.y)
+	)
+	_panel.offset_left = -panel_size.x / 2.0
+	_panel.offset_top = -panel_size.y / 2.0
+	_panel.offset_right = panel_size.x / 2.0
+	_panel.offset_bottom = panel_size.y / 2.0
 
 
 func _refresh_message() -> void:
