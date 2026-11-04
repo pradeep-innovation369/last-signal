@@ -1,6 +1,8 @@
 extends Node2D
 
 @onready var power_console: Interactable = $WorldVisuals/DepthSort/PowerConsole
+# TEMP DEBUG: remove after testing.
+@onready var power_console_range: CollisionShape2D = $WorldVisuals/DepthSort/PowerConsole/InteractionRange
 @onready var hud: HUDController = $HUD
 @onready var player: PlayerController = $WorldVisuals/DepthSort/Player
 @onready var player_camera: Camera2D = $WorldVisuals/DepthSort/Player/Camera2D
@@ -34,12 +36,18 @@ func _process(delta: float) -> void:
 	_power_console_debug_elapsed += delta
 	if _power_console_debug_elapsed >= 1.0:
 		_power_console_debug_elapsed = 0.0
+		var overlap_details := PackedStringArray()
+		for body: Node2D in power_console.get_overlapping_bodies():
+			overlap_details.append("%s(layer=%d)" % [body.name, body.collision_layer])
 		print(
-			"PowerConsole debug | player=%s distance=%.1f nearby=%s"
+			"PowerConsole debug | player=%s distance=%.1f nearby=%s monitoring=%s shape_disabled=%s overlaps=[%s]"
 			% [
 				player.global_position,
 				player.global_position.distance_to(power_console.global_position),
 				is_instance_valid(nearby_interactable),
+				power_console.monitoring,
+				power_console_range.disabled,
+				", ".join(overlap_details),
 			]
 		)
 
@@ -67,6 +75,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_interactable_entered(interactable: Interactable) -> void:
+	# TEMP DEBUG: remove this line after testing.
+	print("PowerConsole debug | Main received player_entered from %s" % interactable.name)
 	nearby_interactable = interactable
 	hud.set_interaction_hint(interactable.interaction_hint)
 
