@@ -1,6 +1,6 @@
 extends Node2D
 
-@onready var power_console: Interactable = $PowerConsole
+@onready var power_console: Interactable = $WorldVisuals/DepthSort/PowerConsole
 @onready var hud: HUDController = $HUD
 
 var nearby_interactable: Interactable
@@ -11,7 +11,7 @@ func _ready() -> void:
 	power_console.player_exited.connect(_on_interactable_exited)
 	power_console.interaction_requested.connect(hud.show_message)
 
-	for location: LocationArea in $Locations.get_children():
+	for location: LocationArea in $Gameplay/Locations.get_children():
 		location.location_entered.connect(hud.set_location)
 
 

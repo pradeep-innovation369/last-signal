@@ -42,75 +42,88 @@ size = Vector2(64, 24)
 [node name="Main" type="Node2D"]
 script = ExtResource("4_main")
 
-[node name="Floor" type="Polygon2D" parent="."]
+[node name="WorldVisuals" type="Node2D" parent="."]
+
+[node name="Ground" type="Node2D" parent="WorldVisuals"]
+
+[node name="Backdrop" type="Node2D" parent="WorldVisuals"]
+
+[node name="DepthSort" type="Node2D" parent="WorldVisuals"]
+y_sort_enabled = true
+
+[node name="Foreground" type="Node2D" parent="WorldVisuals"]
+
+[node name="Gameplay" type="Node2D" parent="."]
+
+[node name="Floor" type="Polygon2D" parent="WorldVisuals/Ground"]
 color = Color(0.035, 0.055, 0.07, 1)
 polygon = PackedVector2Array(-320, -120, 480, -120, 480, 120, -320, 120)
 
-[node name="RoomFloors" type="Node2D" parent="."]
+[node name="RoomFloors" type="Node2D" parent="WorldVisuals/Ground"]
 
-[node name="CryoChamberFloor" type="Polygon2D" parent="RoomFloors"]
+[node name="CryoChamberFloor" type="Polygon2D" parent="WorldVisuals/Ground/RoomFloors"]
 color = Color(0.055, 0.09, 0.11, 1)
 polygon = PackedVector2Array(-312, -112, -88, -112, -88, 112, -312, 112)
 
-[node name="MainCorridorFloor" type="Polygon2D" parent="RoomFloors"]
+[node name="MainCorridorFloor" type="Polygon2D" parent="WorldVisuals/Ground/RoomFloors"]
 color = Color(0.065, 0.095, 0.11, 1)
 polygon = PackedVector2Array(-72, -56, 152, -56, 152, 56, -72, 56)
 
-[node name="EngineeringFloor" type="Polygon2D" parent="RoomFloors"]
+[node name="EngineeringFloor" type="Polygon2D" parent="WorldVisuals/Ground/RoomFloors"]
 color = Color(0.055, 0.09, 0.11, 1)
 polygon = PackedVector2Array(168, -112, 472, -112, 472, 112, 168, 112)
 
-[node name="FloorDetails" type="Node2D" parent="."]
+[node name="FloorDetails" type="Node2D" parent="WorldVisuals/Ground"]
 
-[node name="CryoNorthPanel" type="Polygon2D" parent="FloorDetails"]
+[node name="CryoNorthPanel" type="Polygon2D" parent="WorldVisuals/Ground/FloorDetails"]
 color = Color(0.075, 0.13, 0.145, 1)
 polygon = PackedVector2Array(-288, -96, -112, -96, -112, -92, -288, -92)
 
-[node name="CryoSouthPanel" type="Polygon2D" parent="FloorDetails"]
+[node name="CryoSouthPanel" type="Polygon2D" parent="WorldVisuals/Ground/FloorDetails"]
 color = Color(0.075, 0.13, 0.145, 1)
 polygon = PackedVector2Array(-288, 92, -112, 92, -112, 96, -288, 96)
 
-[node name="CorridorCenterLine" type="Polygon2D" parent="FloorDetails"]
+[node name="CorridorCenterLine" type="Polygon2D" parent="WorldVisuals/Ground/FloorDetails"]
 color = Color(0.09, 0.15, 0.16, 1)
 polygon = PackedVector2Array(-64, -2, 144, -2, 144, 2, -64, 2)
 
-[node name="CryoPodOne" type="Polygon2D" parent="FloorDetails"]
+[node name="CryoPodOne" type="Polygon2D" parent="WorldVisuals/DepthSort"]
 position = Vector2(-264, -38)
 color = Color(0.12, 0.2, 0.22, 1)
 polygon = PackedVector2Array(-18, -32, 18, -32, 18, 32, -18, 32)
 
-[node name="CryoPodOneGlass" type="Polygon2D" parent="FloorDetails"]
+[node name="CryoPodOneGlass" type="Polygon2D" parent="WorldVisuals/DepthSort"]
 position = Vector2(-264, -38)
 color = Color(0.18, 0.48, 0.52, 1)
 polygon = PackedVector2Array(-12, -24, 12, -24, 12, 24, -12, 24)
 
-[node name="CryoPodTwo" type="Polygon2D" parent="FloorDetails"]
+[node name="CryoPodTwo" type="Polygon2D" parent="WorldVisuals/DepthSort"]
 position = Vector2(-264, 42)
 color = Color(0.12, 0.2, 0.22, 1)
 polygon = PackedVector2Array(-18, -28, 18, -28, 18, 28, -18, 28)
 
-[node name="CryoPodTwoGlass" type="Polygon2D" parent="FloorDetails"]
+[node name="CryoPodTwoGlass" type="Polygon2D" parent="WorldVisuals/DepthSort"]
 position = Vector2(-264, 42)
 color = Color(0.18, 0.38, 0.43, 1)
 polygon = PackedVector2Array(-12, -20, 12, -20, 12, 20, -12, 20)
 
-[node name="EngineeringBench" type="Polygon2D" parent="FloorDetails"]
+[node name="EngineeringBench" type="Polygon2D" parent="WorldVisuals/DepthSort"]
 position = Vector2(408, -58)
 color = Color(0.12, 0.19, 0.21, 1)
 polygon = PackedVector2Array(-32, -12, 32, -12, 32, 12, -32, 12)
 
-[node name="EngineeringBenchScreen" type="Polygon2D" parent="FloorDetails"]
+[node name="EngineeringBenchScreen" type="Polygon2D" parent="WorldVisuals/DepthSort"]
 position = Vector2(408, -58)
 color = Color(0.2, 0.46, 0.48, 1)
 polygon = PackedVector2Array(-20, -5, 20, -5, 20, 5, -20, 5)
 
-[node name="CryoDressing" parent="." instance=ExtResource("6_cryo_dressing")]
+[node name="CryoDressing" parent="WorldVisuals/Backdrop" instance=ExtResource("6_cryo_dressing")]
 
-[node name="CorridorDressing" parent="." instance=ExtResource("7_corridor_dressing")]
+[node name="CorridorDressing" parent="WorldVisuals/Backdrop" instance=ExtResource("7_corridor_dressing")]
 
-[node name="EngineeringDressing" parent="." instance=ExtResource("8_engineering_dressing")]
+[node name="EngineeringDressing" parent="WorldVisuals/Backdrop" instance=ExtResource("8_engineering_dressing")]
 
-[node name="Walls" type="StaticBody2D" parent="."]
+[node name="Walls" type="StaticBody2D" parent="Gameplay"]
 collision_layer = 1
 collision_mask = 1
 
@@ -166,126 +179,126 @@ shape = SubResource("RectangleShape2D_cryo_pod_two")
 position = Vector2(408, -58)
 shape = SubResource("RectangleShape2D_engineering_bench")
 
-[node name="WallVisuals" type="Node2D" parent="."]
+[node name="WallVisuals" type="Node2D" parent="WorldVisuals/Backdrop"]
 
-[node name="NorthWall" type="Polygon2D" parent="WallVisuals"]
+[node name="NorthWall" type="Polygon2D" parent="WorldVisuals/Backdrop/WallVisuals"]
 position = Vector2(80, -128)
 color = Color(0.14, 0.23, 0.27, 1)
 polygon = PackedVector2Array(-400, -8, 400, -8, 400, 8, -400, 8)
 
-[node name="SouthWall" type="Polygon2D" parent="WallVisuals"]
+[node name="SouthWall" type="Polygon2D" parent="WorldVisuals/Backdrop/WallVisuals"]
 position = Vector2(80, 128)
 color = Color(0.14, 0.23, 0.27, 1)
 polygon = PackedVector2Array(-400, -8, 400, -8, 400, 8, -400, 8)
 
-[node name="WestWall" type="Polygon2D" parent="WallVisuals"]
+[node name="WestWall" type="Polygon2D" parent="WorldVisuals/Backdrop/WallVisuals"]
 position = Vector2(-328, 0)
 color = Color(0.14, 0.23, 0.27, 1)
 polygon = PackedVector2Array(-8, -120, 8, -120, 8, 120, -8, 120)
 
-[node name="EastWall" type="Polygon2D" parent="WallVisuals"]
+[node name="EastWall" type="Polygon2D" parent="WorldVisuals/Backdrop/WallVisuals"]
 position = Vector2(488, 0)
 color = Color(0.14, 0.23, 0.27, 1)
 polygon = PackedVector2Array(-8, -120, 8, -120, 8, 120, -8, 120)
 
-[node name="CryoDividerNorth" type="Polygon2D" parent="WallVisuals"]
+[node name="CryoDividerNorth" type="Polygon2D" parent="WorldVisuals/Backdrop/WallVisuals"]
 position = Vector2(-80, -72)
 color = Color(0.14, 0.23, 0.27, 1)
 polygon = PackedVector2Array(-8, -48, 8, -48, 8, 48, -8, 48)
 
-[node name="CryoDividerSouth" type="Polygon2D" parent="WallVisuals"]
+[node name="CryoDividerSouth" type="Polygon2D" parent="WorldVisuals/Backdrop/WallVisuals"]
 position = Vector2(-80, 72)
 color = Color(0.14, 0.23, 0.27, 1)
 polygon = PackedVector2Array(-8, -48, 8, -48, 8, 48, -8, 48)
 
-[node name="EngineeringDividerNorth" type="Polygon2D" parent="WallVisuals"]
+[node name="EngineeringDividerNorth" type="Polygon2D" parent="WorldVisuals/Backdrop/WallVisuals"]
 position = Vector2(160, -72)
 color = Color(0.14, 0.23, 0.27, 1)
 polygon = PackedVector2Array(-8, -48, 8, -48, 8, 48, -8, 48)
 
-[node name="EngineeringDividerSouth" type="Polygon2D" parent="WallVisuals"]
+[node name="EngineeringDividerSouth" type="Polygon2D" parent="WorldVisuals/Backdrop/WallVisuals"]
 position = Vector2(160, 72)
 color = Color(0.14, 0.23, 0.27, 1)
 polygon = PackedVector2Array(-8, -48, 8, -48, 8, 48, -8, 48)
 
-[node name="CorridorNorthWall" type="Polygon2D" parent="WallVisuals"]
+[node name="CorridorNorthWall" type="Polygon2D" parent="WorldVisuals/Backdrop/WallVisuals"]
 position = Vector2(40, -70)
 color = Color(0.14, 0.23, 0.27, 1)
 polygon = PackedVector2Array(-120, -6, 120, -6, 120, 6, -120, 6)
 
-[node name="CorridorSouthWall" type="Polygon2D" parent="WallVisuals"]
+[node name="CorridorSouthWall" type="Polygon2D" parent="WorldVisuals/Backdrop/WallVisuals"]
 position = Vector2(40, 70)
 color = Color(0.14, 0.23, 0.27, 1)
 polygon = PackedVector2Array(-120, -6, 120, -6, 120, 6, -120, 6)
 
-[node name="DoorThresholds" type="Node2D" parent="."]
+[node name="DoorThresholds" type="Node2D" parent="WorldVisuals/Backdrop"]
 
-[node name="CryoDoorThreshold" type="Polygon2D" parent="DoorThresholds"]
+[node name="CryoDoorThreshold" type="Polygon2D" parent="WorldVisuals/Backdrop/DoorThresholds"]
 position = Vector2(-80, 0)
 color = Color(0.25, 0.62, 0.63, 1)
 polygon = PackedVector2Array(-2, -20, 2, -20, 2, 20, -2, 20)
 
-[node name="CryoDoorFrameNorth" type="Polygon2D" parent="DoorThresholds"]
+[node name="CryoDoorFrameNorth" type="Polygon2D" parent="WorldVisuals/Backdrop/DoorThresholds"]
 position = Vector2(-80, -24)
 color = Color(0.25, 0.62, 0.63, 1)
 polygon = PackedVector2Array(-10, -2, 10, -2, 10, 2, -10, 2)
 
-[node name="CryoDoorFrameSouth" type="Polygon2D" parent="DoorThresholds"]
+[node name="CryoDoorFrameSouth" type="Polygon2D" parent="WorldVisuals/Backdrop/DoorThresholds"]
 position = Vector2(-80, 24)
 color = Color(0.25, 0.62, 0.63, 1)
 polygon = PackedVector2Array(-10, -2, 10, -2, 10, 2, -10, 2)
 
-[node name="EngineeringDoorThreshold" type="Polygon2D" parent="DoorThresholds"]
+[node name="EngineeringDoorThreshold" type="Polygon2D" parent="WorldVisuals/Backdrop/DoorThresholds"]
 position = Vector2(160, 0)
 color = Color(0.25, 0.62, 0.63, 1)
 polygon = PackedVector2Array(-2, -20, 2, -20, 2, 20, -2, 20)
 
-[node name="EngineeringDoorFrameNorth" type="Polygon2D" parent="DoorThresholds"]
+[node name="EngineeringDoorFrameNorth" type="Polygon2D" parent="WorldVisuals/Backdrop/DoorThresholds"]
 position = Vector2(160, -24)
 color = Color(0.25, 0.62, 0.63, 1)
 polygon = PackedVector2Array(-10, -2, 10, -2, 10, 2, -10, 2)
 
-[node name="EngineeringDoorFrameSouth" type="Polygon2D" parent="DoorThresholds"]
+[node name="EngineeringDoorFrameSouth" type="Polygon2D" parent="WorldVisuals/Backdrop/DoorThresholds"]
 position = Vector2(160, 24)
 color = Color(0.25, 0.62, 0.63, 1)
 polygon = PackedVector2Array(-10, -2, 10, -2, 10, 2, -10, 2)
 
-[node name="Locations" type="Node2D" parent="."]
+[node name="Locations" type="Node2D" parent="Gameplay"]
 
-[node name="CryoChamber" type="Area2D" parent="Locations"]
+[node name="CryoChamber" type="Area2D" parent="Gameplay/Locations"]
 collision_layer = 0
 collision_mask = 1
 script = ExtResource("5_location")
 location_name = "Cryo Chamber"
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Locations/CryoChamber"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Gameplay/Locations/CryoChamber"]
 position = Vector2(-200, 0)
 shape = SubResource("RectangleShape2D_location_cryo")
 
-[node name="MainCorridor" type="Area2D" parent="Locations"]
+[node name="MainCorridor" type="Area2D" parent="Gameplay/Locations"]
 collision_layer = 0
 collision_mask = 1
 script = ExtResource("5_location")
 location_name = "Main Corridor"
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Locations/MainCorridor"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Gameplay/Locations/MainCorridor"]
 position = Vector2(40, 0)
 shape = SubResource("RectangleShape2D_location_corridor")
 
-[node name="EngineeringRoom" type="Area2D" parent="Locations"]
+[node name="EngineeringRoom" type="Area2D" parent="Gameplay/Locations"]
 collision_layer = 0
 collision_mask = 1
 script = ExtResource("5_location")
 location_name = "Engineering Room"
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Locations/EngineeringRoom"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Gameplay/Locations/EngineeringRoom"]
 position = Vector2(320, 0)
 shape = SubResource("RectangleShape2D_location_engineering")
 
-[node name="PowerConsole" parent="." instance=ExtResource("2_console")]
+[node name="PowerConsole" parent="WorldVisuals/DepthSort" instance=ExtResource("2_console")]
 position = Vector2(320, 8)
 
-[node name="Player" parent="." instance=ExtResource("1_player")]
+[node name="Player" parent="WorldVisuals/DepthSort" instance=ExtResource("1_player")]
 position = Vector2(-208, 0)
 
 [node name="HUD" parent="." instance=ExtResource("3_hud")]
