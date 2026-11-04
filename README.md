@@ -12,6 +12,8 @@ Move with **WASD** or the **arrow keys**. Approach the power console in Engineer
 and press **E** to read its status. Access the navigation console along the north
 wall of the Cryo Chamber to check the ship's navigation status. The Engineering
 north-wall security console reports system status and recorded security events.
+Approach crew data terminals and press **E** to recover logs; select **LOGS** in the
+HUD to revisit discoveries from the current session.
 The HUD shows your current location, objective, and interaction hint. The game uses
 a 320x180 logical viewport upscaled with integer scaling to a resizable 1280x720
 window. The connected rooms sit inside a 3D spacecraft hull, and the orange 3D

@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/world/PowerConsole.tscn" id="2_console"]
@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" path="res://scenes/world/ShipWorld3D.tscn" id="16_ship_world"]
 [ext_resource type="PackedScene" path="res://scenes/world/NavigationConsole.tscn" id="17_navigation"]
 [ext_resource type="PackedScene" path="res://scenes/world/SecurityConsole.tscn" id="18_security"]
+[ext_resource type="PackedScene" path="res://scenes/world/CrewDataLogTerminal.tscn" id="19_log_terminal"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_cryo_divider"]
 size = Vector2(16, 72)
@@ -154,6 +155,23 @@ position = Vector2(-136, -102)
 
 [node name="SecurityConsole" parent="WorldVisuals/DepthSort" instance=ExtResource("18_security")]
 position = Vector2(264, -102)
+
+[node name="CrewDataLogs" type="Node2D" parent="WorldVisuals/DepthSort"]
+
+[node name="CryoObservation" parent="WorldVisuals/DepthSort/CrewDataLogs" instance=ExtResource("19_log_terminal")]
+position = Vector2(-182, 96)
+interaction_hint = "[E] READ CREW LOG"
+interaction_message = "cryo_observation"
+
+[node name="CorridorEvent" parent="WorldVisuals/DepthSort/CrewDataLogs" instance=ExtResource("19_log_terminal")]
+position = Vector2(120, 48)
+interaction_hint = "[E] READ CREW LOG"
+interaction_message = "corridor_event"
+
+[node name="EngineeringFailure" parent="WorldVisuals/DepthSort/CrewDataLogs" instance=ExtResource("19_log_terminal")]
+position = Vector2(440, -66)
+interaction_hint = "[E] READ CREW LOG"
+interaction_message = "engineering_failure"
 
 [node name="Player" parent="WorldVisuals/DepthSort" instance=ExtResource("1_player")]
 position = Vector2(-208, 0)

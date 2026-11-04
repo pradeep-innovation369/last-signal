@@ -9,6 +9,7 @@ const SECURITY_CONSOLE_INTERACTION_DISTANCE: float = 32.0
 @onready var communications_console: Interactable = $WorldVisuals/DepthSort/CommunicationsConsole
 @onready var navigation_console: Interactable = $WorldVisuals/DepthSort/NavigationConsole
 @onready var security_console: Interactable = $WorldVisuals/DepthSort/SecurityConsole
+@onready var crew_data_logs: Node2D = $WorldVisuals/DepthSort/CrewDataLogs
 @onready var hud: HUDController = $HUD
 @onready var player: PlayerController = $WorldVisuals/DepthSort/Player
 @onready var player_camera: Camera2D = $WorldVisuals/DepthSort/Player/Camera2D
@@ -18,6 +19,7 @@ const SECURITY_CONSOLE_INTERACTION_DISTANCE: float = 32.0
 
 var power_management: PowerManagement = PowerManagement.new()
 var life_support: LifeSupport
+var crew_data_log_system: CrewDataLogSystem = CrewDataLogSystem.new()
 var nearby_interactable: Interactable
 var current_location: String = ""
 
@@ -27,8 +29,10 @@ func _ready() -> void:
 	world_texture.texture = render_viewport.get_texture()
 	_sync_world_view(0.0)
 	hud.set_life_support(life_support, power_management)
+	hud.set_crew_data_log_system(crew_data_log_system)
 	hud.set_player_position(player.global_position)
 	hud.power_console_closed.connect(_on_power_console_closed)
+	hud.crew_data_log_opened.connect(_on_crew_data_log_opened)
 	power_console.player_entered.connect(_on_interactable_entered)
 	power_console.player_exited.connect(_on_interactable_exited)
 	power_console.interaction_requested.connect(_on_power_console_interaction_requested)
@@ -41,6 +45,11 @@ func _ready() -> void:
 	security_console.player_entered.connect(_on_interactable_entered)
 	security_console.player_exited.connect(_on_interactable_exited)
 	security_console.interaction_requested.connect(_on_security_console_interaction_requested)
+	for log_node: Node in crew_data_logs.get_children():
+		var log_interactable := log_node as Interactable
+		log_interactable.player_entered.connect(_on_interactable_entered)
+		log_interactable.player_exited.connect(_on_interactable_exited)
+		log_interactable.interaction_requested.connect(_on_crew_data_log_interaction_requested)
 
 	for location: LocationArea in $Gameplay/Locations.get_children():
 		location.location_entered.connect(_on_location_entered)
@@ -58,6 +67,9 @@ func _update_power_console_proximity() -> void:
 	_update_console_proximity(communications_console, COMMUNICATIONS_CONSOLE_INTERACTION_DISTANCE)
 	_update_console_proximity(navigation_console, NAVIGATION_CONSOLE_INTERACTION_DISTANCE)
 	_update_console_proximity(security_console, SECURITY_CONSOLE_INTERACTION_DISTANCE)
+	for log_node: Node in crew_data_logs.get_children():
+		var log_interactable := log_node as Interactable
+		_update_console_proximity(log_interactable, 32.0)
 
 
 func _update_console_proximity(console: Interactable, interaction_distance: float) -> void:
@@ -108,6 +120,7 @@ func _on_interactable_exited(interactable: Interactable) -> void:
 	hud.close_communications_console()
 	hud.close_navigation_console()
 	hud.close_security_console()
+	hud.close_crew_data_log()
 	nearby_interactable = null
 	hud.set_interaction_hint(_get_location_guidance())
 	hud.clear_message()
@@ -144,6 +157,19 @@ func _on_navigation_console_interaction_requested(_message: String) -> void:
 
 func _on_security_console_interaction_requested(_message: String) -> void:
 	hud.open_security_console(power_management)
+	player.set_physics_process(false)
+
+
+func _on_crew_data_log_interaction_requested(log_id: String) -> void:
+	if not crew_data_log_system.has_log(log_id):
+		push_error("Main: Crew data log terminal references unknown log '%s'." % log_id)
+		return
+
+	crew_data_log_system.discover_log(log_id)
+	hud.open_crew_data_log(crew_data_log_system, log_id)
+
+
+func _on_crew_data_log_opened() -> void:
 	player.set_physics_process(false)
 
 

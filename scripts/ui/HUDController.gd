@@ -2,6 +2,7 @@ extends CanvasLayer
 class_name HUDController
 
 signal power_console_closed
+signal crew_data_log_opened
 
 @onready var interaction_hint: Label = $Root/InteractionHint
 @onready var message_frame: ColorRect = $Root/MessageFrame
@@ -11,12 +12,15 @@ signal power_console_closed
 @onready var communications_console: CommunicationsConsoleController = $CommunicationsConsolePanel
 @onready var navigation_console: NavigationConsoleController = $NavigationConsolePanel
 @onready var security_console: SecurityConsoleController = $SecurityConsolePanel
+@onready var crew_data_log_panel: CrewDataLogController = $CrewDataLogPanel
+@onready var log_archive_button: Button = $Root/LogArchiveButton
 @onready var oxygen_value: Label = $Root/OxygenValue
 @onready var oxygen_bar: ProgressBar = $Root/OxygenBar
 @onready var ship_minimap: ShipMinimap = $Root/ShipMinimap
 
 var _life_support: LifeSupport
 var _power_management: PowerManagement
+var _crew_data_log_system: CrewDataLogSystem
 
 
 func _ready() -> void:
@@ -24,6 +28,19 @@ func _ready() -> void:
 	communications_console.closed.connect(_on_power_console_closed)
 	navigation_console.closed.connect(_on_power_console_closed)
 	security_console.closed.connect(_on_power_console_closed)
+	crew_data_log_panel.closed.connect(_on_power_console_closed)
+	crew_data_log_panel.opened.connect(_on_crew_data_log_panel_opened)
+	log_archive_button.pressed.connect(_on_log_archive_button_pressed)
+	log_archive_button.add_theme_color_override("font_color", Color(0.84, 0.91, 0.92, 1.0))
+	log_archive_button.add_theme_font_size_override("font_size", 8)
+	log_archive_button.add_theme_stylebox_override(
+		"normal",
+		_make_button_style(Color(0.025, 0.043, 0.060, 0.95))
+	)
+	log_archive_button.add_theme_stylebox_override(
+		"hover",
+		_make_button_style(Color(0.075, 0.14, 0.16, 1.0))
+	)
 	oxygen_bar.max_value = 100.0
 	oxygen_bar.add_theme_stylebox_override("background", _make_oxygen_style(Color(0.07, 0.13, 0.16, 1.0)))
 	oxygen_bar.add_theme_stylebox_override("fill", _make_oxygen_style(Color(0.28, 0.79, 0.84, 1.0)))
@@ -37,6 +54,10 @@ func set_life_support(life_support: LifeSupport, power_management: PowerManageme
 	if not _power_management.allocation_changed.is_connected(_on_power_allocation_changed):
 		_power_management.allocation_changed.connect(_on_power_allocation_changed)
 	_update_oxygen_display(_life_support.get_oxygen_level())
+
+
+func set_crew_data_log_system(log_system: CrewDataLogSystem) -> void:
+	_crew_data_log_system = log_system
 
 
 func set_player_position(world_position: Vector2) -> void:
@@ -93,6 +114,20 @@ func close_security_console() -> void:
 	security_console.close()
 
 
+func open_crew_data_log(log_system: CrewDataLogSystem, log_id: String) -> void:
+	_crew_data_log_system = log_system
+	crew_data_log_panel.open_log(log_system, log_id)
+
+
+func open_crew_data_log_archive(log_system: CrewDataLogSystem) -> void:
+	_crew_data_log_system = log_system
+	crew_data_log_panel.open_archive(log_system)
+
+
+func close_crew_data_log() -> void:
+	crew_data_log_panel.close()
+
+
 func is_power_console_open() -> bool:
 	return power_console.visible
 
@@ -103,6 +138,7 @@ func is_any_console_open() -> bool:
 		or communications_console.visible
 		or navigation_console.visible
 		or security_console.visible
+		or crew_data_log_panel.visible
 	)
 
 
@@ -115,6 +151,20 @@ func close_open_console() -> void:
 		navigation_console.close()
 	elif security_console.visible:
 		security_console.close()
+	elif crew_data_log_panel.visible:
+		crew_data_log_panel.close()
+
+
+func _on_log_archive_button_pressed() -> void:
+	if _crew_data_log_system == null:
+		push_error("HUDController: Crew data log system has not been initialized.")
+		return
+
+	open_crew_data_log_archive(_crew_data_log_system)
+
+
+func _on_crew_data_log_panel_opened() -> void:
+	crew_data_log_opened.emit()
 
 
 func _on_oxygen_changed(oxygen_level: float) -> void:
@@ -148,4 +198,15 @@ func _make_oxygen_style(color: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = color
 	style.set_corner_radius_all(1)
+	return style
+
+
+func _make_button_style(background: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = background
+	style.border_color = Color(0.14, 0.25, 0.29, 1.0)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(2)
+	style.content_margin_left = 3.0
+	style.content_margin_right = 3.0
 	return style
