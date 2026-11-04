@@ -7,6 +7,7 @@
 size = Vector2(10, 12)
 
 [node name="Player" type="CharacterBody2D"]
+groups=["player"]
 collision_layer = 1
 collision_mask = 1
 script = ExtResource("1_controller")
@@ -19,6 +20,6 @@ shape = SubResource("RectangleShape2D_player")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 limit_left = -320
-limit_top = -180
-limit_right = 320
-limit_bottom = 180
+limit_top = -120
+limit_right = 480
+limit_bottom = 120
